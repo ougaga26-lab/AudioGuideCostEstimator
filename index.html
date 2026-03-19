@@ -992,11 +992,16 @@ function downloadPdf(){
     @media print {
       @page { size: A4; margin: 14mm 12mm; }
 
-      * { color: #111 !important; background: white !important;
-          border-color: #bbb !important; box-shadow: none !important;
-          animation: none !important; text-shadow: none !important; }
+      /* Force background printing for all elements */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-shadow: none !important;
+        animation: none !important;
+        text-shadow: none !important;
+      }
 
-      body { background: white !important; }
+      body { background: white !important; color: #111 !important; }
 
       [data-hide="1"], [data-phide="1"] { display: none !important; }
 
@@ -1009,63 +1014,113 @@ function downloadPdf(){
 
       /* keep radio labels visible */
       .radio-row { padding-left: 4px; }
-      .radio-row label { display: block !important; font-size: .8rem !important; }
+      .radio-row label { display: block !important; font-size: .8rem !important; color: #111 !important; }
 
-      /* section headers — black bg, white bold text */
-      .cat-hd { background: #000 !important; }
-      .cat-hd, .cat-hd * { color: #fff !important; font-weight: bold !important; }
-      .cat-hd-label { color: #fff !important; font-weight: bold !important; }
+      /* default text black for light areas */
+      .cat-body, .sub-body, .cat-wrap, .params-bar,
+      .lang-row, .lang-row label, .lang-nums, .lang-nums strong,
+      td, th, .note { color: #111 !important; }
+      td.dim { color: #555 !important; }
+      td.num { color: #111 !important; }
 
-      .sub-hd { background: #333 !important; }
-      .sub-hd, .sub-hd * { color: #fff !important; }
+      /* section headers — solid black bg, white bold text */
+      .cat-hd {
+        background-color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .cat-hd, .cat-hd * { color: #ffffff !important; font-weight: bold !important; }
+
+      .sub-hd {
+        background-color: #333333 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .sub-hd, .sub-hd * { color: #ffffff !important; font-weight: bold !important; }
 
       /* sub-bodies always open */
-      .sub-body { display: block !important; background: white !important; }
+      .sub-body { display: block !important; background-color: #ffffff !important; }
 
-      /* totals bars — black bg */
-      .sec-total { background: #000 !important; border-top: 2px solid #333 !important; }
-      .sec-total, .sec-total * { color: #fff !important; }
-      .sec-total-label { color: #ddd !important; font-weight: bold !important; }
-      .stot-lbl { color: #bbb !important; }
-      .stot-val, .stot-val.gold, .stot-val.mid { color: #fff !important; font-weight: bold !important; }
+      /* totals bars — solid black bg */
+      .sec-total {
+        background-color: #000000 !important;
+        border-top: 2px solid #444 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .sec-total * { color: #ffffff !important; }
+      .sec-total .sec-total-label { color: #eeeeee !important; font-weight: bold !important; }
+      .sec-total .stot-lbl { color: #cccccc !important; }
+      .sec-total .stot-val { color: #ffffff !important; font-weight: bold !important; }
 
-      .sub-sec-total { background: #f0f0f0 !important; border-top: 1px solid #bbb !important; }
-      .sub-sec-total * { color: #111 !important; }
-      .sub-sec-total .stot-lbl { color: #555 !important; }
+      /* B.1 / B.2 sub-totals — light grey bg */
+      .sub-sec-total {
+        background-color: #eeeeee !important;
+        border-top: 1px solid #bbb !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .sub-sec-total * { color: #111111 !important; }
+      .sub-sec-total .stot-lbl { color: #555555 !important; }
+      .sub-sec-total .stot-val { color: #111111 !important; font-weight: bold !important; }
 
       /* params bar */
-      .params-bar { border: 1px solid #bbb !important; background: #f8f8f8 !important; }
-      .param-item, .param-item strong { color: #111 !important; }
+      .params-bar {
+        border: 1px solid #bbb !important;
+        background-color: #f4f4f4 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .param-item { color: #666 !important; }
+      .param-item strong { color: #111 !important; }
 
       /* tables */
       table { font-size: .78rem !important; }
-      th { color: #444 !important; border-bottom: 1px solid #999 !important; }
-      td { border-bottom: 1px solid #ddd !important; color: #111 !important; }
-      td.dim { color: #555 !important; }
+      th { color: #444 !important; border-bottom: 1px solid #999 !important; background: white !important; }
+      td { border-bottom: 1px solid #ddd !important; }
 
-      /* grand panel — black bg, white bold text */
-      .grand-panel { background: #000 !important; page-break-inside: avoid; }
-      .grand-panel, .grand-panel * { color: #fff !important; }
-      .gp-title { color: #ccc !important; }
-      .gp-label-main { color: #fff !important; font-weight: bold !important; font-size: 1.1rem !important; }
-      .gp-line .lbl { color: #ddd !important; }
-      .gp-line .vals, .gp-line .v-orig, .gp-line .v-mid, .gp-line .v-collab { color: #fff !important; }
-      .gp-tot-lbl { color: #ccc !important; }
-      .gp-tot-val, .gp-tot-val.big { color: #fff !important; font-weight: bold !important; }
-      .gp-sep { color: #888 !important; }
+      /* grand panel — solid black bg */
+      .grand-panel {
+        background-color: #000000 !important;
+        page-break-inside: avoid;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .grand-panel * { color: #ffffff !important; }
+      .gp-label-main { color: #ffffff !important; font-weight: bold !important; font-size: 1.1rem !important; }
+      .gp-title { color: #cccccc !important; font-size: .65rem !important; }
+      .gp-breakdown { border-bottom: 1px solid #555 !important; }
+      .gp-line .lbl { color: #dddddd !important; }
+      .gp-line .vals span { color: #ffffff !important; }
+      .gp-tot-lbl { color: #cccccc !important; }
+      .gp-tot-val { color: #ffffff !important; font-weight: bold !important; }
+      .gp-sep { color: #888888 !important; }
 
       /* cat-wrap */
-      .cat-wrap { border: 1px solid #bbb !important; page-break-inside: avoid; margin-bottom: 14px !important; }
+      .cat-wrap {
+        border: 1px solid #bbb !important;
+        page-break-inside: avoid;
+        margin-bottom: 14px !important;
+        background-color: #ffffff !important;
+      }
 
       /* note */
-      .note { border-left: 2px solid #888 !important; color: #444 !important; background: #f8f8f8 !important; }
-
-      /* lang rows */
-      .lang-row { border-bottom: 1px solid #ddd !important; }
-      .lang-nums { color: #333 !important; }
+      .note {
+        border-left: 2px solid #888 !important;
+        color: #444 !important;
+        background-color: #f8f8f8 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
 
       /* sound grid */
-      .sound-lang-row { border: 1px solid #bbb !important; background: #f8f8f8 !important; }
+      .sound-lang-row {
+        border: 1px solid #bbb !important;
+        background-color: #f4f4f4 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .sound-lang-row .slang, .sound-lang-row .snums { color: #111 !important; }
     }`;
   document.head.appendChild(style);
 
