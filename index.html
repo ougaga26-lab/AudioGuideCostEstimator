@@ -84,6 +84,12 @@ h1 span{color:var(--gold);}
 .stot-val.gold{color:#ffd055;font-size:1.1rem;font-weight:bold;}
 .stot-val.mid{color:#ffe0a0;font-size:1rem;font-weight:bold;}
 
+/* Mode toggle switch (VO / REC) */
+.mode-toggle{display:flex;align-items:center;gap:0;border-radius:20px;overflow:hidden;border:1px solid #c8a855;flex-shrink:0;}
+.mode-toggle-btn{background:transparent;border:none;padding:4px 10px;font-size:.72rem;font-family:'Space Mono',monospace;cursor:pointer;color:#c8a855;transition:all .2s;white-space:nowrap;}
+.mode-toggle-btn.active{background:var(--gold);color:var(--ink);font-weight:bold;}
+.mode-toggle-btn:hover:not(.active){background:rgba(200,168,85,.15);}
+
 /* Sub-level totals (B.1, B.2 each) — light bg, dark text */
 .sub-sec-total{background:linear-gradient(135deg,#f5efd8,#ede4c4);border-top:1px solid var(--gold-p);padding:13px 18px;display:flex;flex-wrap:wrap;gap:8px 26px;justify-content:flex-end;align-items:center;}
 .sub-sec-total .sec-total-label{font-size:.82rem;color:#3a2c10;font-family:'Space Mono',monospace;letter-spacing:.04em;margin-right:auto;font-weight:bold;}
@@ -198,8 +204,8 @@ td.num{font-family:'Space Mono',monospace;}
       <span class="card-icon">✍️</span>
       <div class="card-title">以中文總字數估算</div>
       <div class="input-group">
-        <div class="input-row"><label>中文總字數</label><input type="number" id="chars-input" value="9000" min="1" oninput="onInput()"><span class="unit">字</span></div>
-        <div class="input-row"><label>總共則數</label><input type="number" id="chars-count" value="30" min="1" oninput="onInput()"><span class="unit">則</span></div>
+        <div class="input-row"><label>中文總字數</label><input type="number" id="chars-input" value="7500" min="1" oninput="onInput()"><span class="unit">字</span></div>
+        <div class="input-row"><label>總共則數</label><input type="number" id="chars-count" value="25" min="1" oninput="onInput()"><span class="unit">則</span></div>
       </div>
     </div>
     <div class="mode-card" id="card-mins" onclick="selectMode('mins')">
@@ -251,12 +257,16 @@ td.num{font-family:'Space Mono',monospace;}
       <div class="sub-hd" onclick="toggleSubBody('sub-b1')">
         <input type="checkbox" class="sub-cb" id="chk-B1" checked onclick="event.stopPropagation()" onchange="syncBHeader();recalcC();recalcGrand()">
         &nbsp;B.1 中文配音
-        <span class="sub-toggle-icon" id="icon-sub-b1">▼ 展開明細</span>
+        <div class="mode-toggle" onclick="event.stopPropagation()" style="margin-left:auto;">
+          <button class="mode-toggle-btn active" id="b1-btn-vo" onclick="setLangMode('b1','vo')">🎤 含配音員</button>
+          <button class="mode-toggle-btn" id="b1-btn-rec" onclick="setLangMode('b1','rec')">🎙️ 純錄音</button>
+        </div>
+        <span class="sub-toggle-icon" id="icon-sub-b1" style="margin-left:12px;">▼ 展開明細</span>
       </div>
       <div class="sub-body" id="sub-b1">
         <div class="note">錄製時間約成品時間的 5 倍（10 分鐘成品 ≈ 50 分鐘錄製）</div>
         <table>
-          <thead><tr><th>項目</th><th>計算方式</th><th class="r">原價</th><th class="r">保守預估</th><th class="r">合作價</th></tr></thead>
+          <thead><tr><th>項目</th><th>單價</th><th>計算方式</th><th class="r">原價</th><th class="r">保守預估</th><th class="r">合作價</th></tr></thead>
           <tbody id="tbl-b1"></tbody>
         </table>
       </div>
@@ -283,18 +293,22 @@ td.num{font-family:'Space Mono',monospace;}
   <div class="cat-wrap" style="animation-delay:.18s">
     <div class="cat-hd">
       <label class="cat-hd-label" onclick="event.stopPropagation()">
-        <input type="checkbox" class="cb" id="chk-C" checked onchange="recalcGrand()">
+        <input type="checkbox" class="cb" id="chk-C" checked onclick="return false">
         🎵 C｜聲音設計
       </label>
     </div>
     <div class="cat-body" id="body-C">
       <div class="note" id="sound-note">依配音語系數量計費，每種語系的語音各自需要聲音設計。</div>
       <div class="radio-row">
-        <input type="radio" name="sound" id="s-simple" value="325" onchange="recalcC();recalcGrand()">
+        <input type="radio" name="sound" id="s-none" value="0" onchange="$('chk-C').checked=false;recalcC();recalcGrand()">
+        <label for="s-none">無聲音設計 — NT$0 / 件</label>
+      </div>
+      <div class="radio-row">
+        <input type="radio" name="sound" id="s-simple" value="325" onchange="$('chk-C').checked=true;recalcC();recalcGrand()">
         <label for="s-simple">簡易背景音樂版 — NT$325 / 件</label>
       </div>
       <div class="radio-row">
-        <input type="radio" name="sound" id="s-complex" value="480" checked onchange="recalcC();recalcGrand()">
+        <input type="radio" name="sound" id="s-complex" value="480" checked onchange="$('chk-C').checked=true;recalcC();recalcGrand()">
         <label for="s-complex">複雜音效＋背景 — NT$480 / 件</label>
       </div>
       <!-- per-lang breakdown -->
@@ -306,44 +320,13 @@ td.num{font-family:'Space Mono',monospace;}
     </div>
   </div>
 
-  <!-- D: Pure Recording -->
-  <div class="cat-wrap" style="animation-delay:.24s">
-    <div class="cat-hd">
-      <label class="cat-hd-label" onclick="event.stopPropagation()">
-        <input type="checkbox" class="cb" id="chk-D" onchange="recalcGrand()">
-        🎙️ D｜純錄音費用（不含配音員）
-      </label>
-    </div>
-    <div class="sub-wrap">
-      <div class="sub-hd" onclick="toggleSubBody('sub-d')">
-        &nbsp;錄音費用明細
-        <span class="sub-toggle-icon" id="icon-sub-d">▼ 展開明細</span>
-      </div>
-      <div class="sub-body" id="sub-d">
-        <div class="note">錄製時間約成品時間的 6 倍（10 分鐘成品 ≈ 1 小時錄製），預設未勾選。</div>
-        <table>
-          <thead><tr><th>項目</th><th>計算方式</th><th class="r">原價</th><th class="r">保守預估</th><th class="r">合作價</th></tr></thead>
-          <tbody id="tbl-d"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="sec-total" id="sec-tot-D">
-      <span class="sec-total-label">D 純錄音費用 小計</span>
-      <div class="stot"><span class="stot-lbl">原價（含稅）</span><span class="stot-val" id="stot-D-orig">—</span></div>
-      <div class="stot"><span class="stot-lbl">保守預估（含稅）</span><span class="stot-val mid" id="stot-D-mid">—</span></div>
-      <div class="stot"><span class="stot-lbl">合作價（含稅）</span><span class="stot-val gold" id="stot-D-collab">—</span></div>
-    </div>
-  </div>
-
   <div class="ornament">· · · · ·</div>
 
   <!-- Grand total panel -->
   <div class="grand-panel">
     <div class="gp-header">
-      <div>
-        <div class="gp-title">▌ 費用總覽（含稅 5%）</div>
-      </div>
       <div class="gp-label-main">成本試算</div>
+      <div class="gp-title">▌ 費用總覽（含稅 5%）</div>
     </div>
     <div class="gp-breakdown" id="gp-breakdown"></div>
     <div class="gp-total-row" id="gp-total-row">
@@ -384,33 +367,84 @@ function fmtTime(mins){
 }
 
 const LANGS=[
-  {key:'en',name:'英文',   label:'中文 → 英文',               rate:2.2},
-  {key:'ja',name:'日文',   label:'中文 → 日文',               rate:1.8},
-  {key:'ko',name:'韓文',   label:'中文 → 韓文',               rate:2.8},
-  {key:'ot',name:'其他（直翻）',label:'中文 → 其他語系（可直翻）',rate:3.5},
-  {key:'ob',name:'其他（英橋）',label:'中文 → 其他語系（英文橋接）',rate:4.8},
+  {key:'en',name:'英文配音',         label:'中文 → 英文',               rate:2.2},
+  {key:'ja',name:'日文配音',         label:'中文 → 日文',               rate:1.8},
+  {key:'ko',name:'韓文配音',         label:'中文 → 韓文',               rate:2.8},
+  {key:'ot',name:'其他配音（直翻）', label:'中文 → 其他語系（可直翻）', rate:3.5},
+  {key:'ob',name:'其他配音（英文橋接）',label:'中文 → 其他語系（英文橋接）',rate:4.8},
 ];
 const B1=[
-  {n:'中文配音',   h:5000,oM:1,cM:1,t:'hr'},
-  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr'},
-  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr'},
-  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx'},
-  {n:'聲導費',     h:2000,oF:0,cF:0,t:'fx'},
+  {n:'中文配音',   h:5000,oM:1,cM:1,t:'hr',u:'/ 小時'},
+  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr',u:'/ 小時'},
+  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr',u:'/ 小時'},
+  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx',u:'/ 場'},
+  {n:'聲導費',     h:2000,oF:0,cF:0,t:'fx',u:'/ 場'},
 ];
 const B2=[
-  {n:'外語配音',   h:6000,oM:1,cM:1,t:'hr'},
-  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr'},
-  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr'},
-  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx'},
-  {n:'聲導費',     h:2000,oF:1,cF:0,t:'fx'},
+  {n:'外語配音',   h:6000,oM:1,cM:1,t:'hr',u:'/ 小時'},
+  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr',u:'/ 小時'},
+  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr',u:'/ 小時'},
+  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx',u:'/ 場'},
+  {n:'聲導費',     h:2000,oF:1,cF:0,t:'fx',u:'/ 場'},
+];
+const B2_OTHER=[
+  {n:'外語配音',   h:6500,oM:1,cM:1,t:'hr',u:'/ 小時'},
+  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr',u:'/ 小時'},
+  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr',u:'/ 小時'},
+  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx',u:'/ 場'},
+  {n:'聲導費',     h:2000,oF:1,cF:0,t:'fx',u:'/ 場'},
 ];
 const D=[
-  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr'},
-  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr'},
-  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx'},
+  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr',u:'/ 小時'},
+  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr',u:'/ 小時'},
+  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx',u:'/ 場'},
 ];
 
-let mode='chars', zhMins=40, fMins=50, zhChars=9000, nItems=30;
+let mode='chars', zhMins=7500/225, fMins=(7500/225)*1.25, zhChars=7500, nItems=25;
+// langMode: 'vo' = voiceover (含配音員), 'rec' = pure recording (純錄音)
+// keys: 'b1' for B.1, lang.key for each B.2
+const langMode = { b1:'vo', en:'vo', ja:'vo', ko:'vo', ot:'vo', ob:'vo' };
+
+function setLangMode(key, m){
+  langMode[key]=m;
+  // update toggle button styles
+  const voBtn=$(key+'-btn-vo'), recBtn=$(key+'-btn-rec');
+  if(voBtn&&recBtn){
+    voBtn.classList.toggle('active', m==='vo');
+    recBtn.classList.toggle('active', m==='rec');
+  }
+  // update note in sub-body
+  const noteEl=document.querySelector(`#sub-${key==='b1'?'b1':('B2_'+key)} .note`);
+  if(noteEl){
+    if(m==='rec') noteEl.textContent='純錄音（客戶自備配音員）：錄製時間約成品時間的 6 倍';
+    else noteEl.textContent = key==='b1'
+      ? '錄製時間約成品時間的 5 倍（10 分鐘成品 ≈ 50 分鐘錄製）'
+      : '外語時長約中文的 1.25 倍；錄製時間約成品的 5 倍';
+  }
+  // re-render B1 table if toggling b1 mode
+  if(key==='b1'){
+    const d=calcRows(getItemsAndHrs('b1').items, getItemsAndHrs('b1').hrs);
+    renderTableRows('tbl-b1', d);
+  } else {
+    recalcB2Values();
+  }
+  recalcC();
+  recalcGrand();
+}
+
+function getItemsAndHrs(key){
+  const m = langMode[key]||'vo';
+  if(key==='b1'){
+    return m==='vo'
+      ? {items:B1, hrs:zhMins*REC_VO/60}
+      : {items:D,  hrs:zhMins*REC_A/60};
+  } else {
+    const b2Items = (key==='ot'||key==='ob') ? B2_OTHER : B2;
+    return m==='vo'
+      ? {items:b2Items, hrs:fMins*REC_VO/60}
+      : {items:D,       hrs:fMins*REC_A/60};
+  }
+}
 
 const $=id=>document.getElementById(id);
 const fmt=n=>'NT$'+Math.round(n).toLocaleString('zh-TW');
@@ -423,14 +457,17 @@ function calcRows(items, recHrs){
     if(it.t==='hr'){o=it.h*recHrs*(it.oM||0);c=it.h*recHrs*(it.cM||0);desc=(it.oM||0)>0?`錄製 ${recHrs.toFixed(2)}h × ${it.oM}`:'不計';}
     else{o=it.h*(it.oF||0);c=it.h*(it.cF||0);desc=(it.oF||0)>0?`${it.oF} 場`:'不計';}
     orig+=o;collab+=c;
-    return {n:it.n,desc,o,c,mid:(o+c)/2};
+    const unitStr = `NT$${it.h.toLocaleString('zh-TW')} ${it.u||''}`;
+    return {n:it.n,unit:unitStr,desc,o,c,mid:(o+c)/2};
   });
   return {rows,orig,collab,mid:(orig+collab)/2};
 }
 
 function renderTableRows(tbodyId, data){
   $(tbodyId).innerHTML=data.rows.map(r=>`<tr>
-    <td>${r.n}</td><td class="dim">${r.desc}</td>
+    <td>${r.n}</td>
+    <td class="dim">${r.unit}</td>
+    <td class="dim">${r.desc}</td>
     <td class="num r">${r.o>0?fmt(r.o):'—'}</td>
     <td class="num r">${r.mid>0?fmt(r.mid):'—'}</td>
     <td class="num r">${r.c>0?fmt(r.c):'—'}</td>
@@ -466,7 +503,11 @@ function syncAHeader(){
 // ── B: toggle all B subs ──
 function toggleAllB(checked){
   $('chk-B1').checked=checked;
-  LANGS.forEach(l=>{const e=$('chk-B2_'+l.key);if(e)e.checked=checked;});
+  LANGS.forEach(l=>{
+    b2Checked[l.key]=checked;
+    const e=$('chk-B2_'+l.key);
+    if(e) e.checked=checked;
+  });
   recalcC();recalcGrand();
 }
 function syncBHeader(){
@@ -482,8 +523,9 @@ function checkedB2Langs(){return LANGS.filter(l=>{const e=$('chk-B2_'+l.key);ret
 
 function activeVoiceList(){
   const list=[];
-  if($('chk-B1')&&$('chk-B1').checked)list.push({key:'zh',name:'中文'});
-  LANGS.forEach(l=>{const e=$('chk-B2_'+l.key);if(e&&e.checked)list.push({key:l.key,name:l.name});});
+  // Only count langs in VO mode for sound design (pure recording doesn't need sound design per-lang)
+  if($('chk-B1')&&$('chk-B1').checked&&(langMode['b1']||'vo')==='vo') list.push({key:'zh',name:'中文'});
+  LANGS.forEach(l=>{const e=$('chk-B2_'+l.key);if(e&&e.checked&&(langMode[l.key]||'vo')==='vo')list.push({key:l.key,name:l.name});});
   return list;
 }
 
@@ -491,18 +533,16 @@ function activeVoiceList(){
 function recalcB2Values(){
   LANGS.forEach(lang=>{
     const bid='B2_'+lang.key;
-    const recHrs=fMins*REC_VO/60;
-    const data=calcRows(B2,recHrs);
+    const {items,hrs}=getItemsAndHrs(lang.key);
+    const data=calcRows(items,hrs);
     const {rows,orig,collab,mid}=data;
-    // update tbody
     const tbody=document.querySelector(`#sub-${bid} tbody`);
     if(tbody) tbody.innerHTML=rows.map(r=>`<tr>
-      <td>${r.n}</td><td class="dim">${r.desc}</td>
+      <td>${r.n}</td><td class="dim">${r.unit}</td><td class="dim">${r.desc}</td>
       <td class="num r">${r.o>0?fmt(r.o):'—'}</td>
       <td class="num r">${r.mid>0?fmt(r.mid):'—'}</td>
       <td class="num r">${r.c>0?fmt(r.c):'—'}</td>
     </tr>`).join('');
-    // update sub-totals: find the sec-total after sub-body
     const subWrap=document.querySelector(`#chk-${bid}`)?.closest('.sub-wrap');
     if(subWrap){
       const vals=subWrap.querySelectorAll('.stot-val');
@@ -514,33 +554,45 @@ function recalcB2Values(){
   recalcC();
 }
 
+// Default B2 checked state — only EN on first load
+const b2Checked = { en:true, ja:false, ko:false, ot:false, ob:false };
+
 // ── Rebuild B2 blocks ──
 function rebuildB2(){
   const container=$('b2-container');
   container.innerHTML='';
   LANGS.forEach((lang,idx)=>{
     const bid='B2_'+lang.key;
-    const recHrs=fMins*REC_VO/60;
-    const data=calcRows(B2,recHrs);
+    const {items,hrs}=getItemsAndHrs(lang.key);
+    const data=calcRows(items,hrs);
     const {rows,orig,collab,mid}=data;
     const rowsHtml=rows.map(r=>`<tr>
-      <td>${r.n}</td><td class="dim">${r.desc}</td>
+      <td>${r.n}</td><td class="dim">${r.unit}</td><td class="dim">${r.desc}</td>
       <td class="num r">${r.o>0?fmt(r.o):'—'}</td>
       <td class="num r">${r.mid>0?fmt(r.mid):'—'}</td>
       <td class="num r">${r.c>0?fmt(r.c):'—'}</td>
     </tr>`).join('');
+    const curMode=langMode[lang.key]||'vo';
+    const noteText=curMode==='vo'
+      ? '外語時長約中文的 1.25 倍；錄製時間約成品的 5 倍'
+      : '純錄音（客戶自備配音員）：錄製時間約成品時間的 6 倍';
+    const isChecked = b2Checked[lang.key] !== false;
     container.insertAdjacentHTML('beforeend',`
       <div class="sub-wrap">
         <div class="sub-hd" onclick="toggleSubBody('sub-${bid}')">
-          <input type="checkbox" class="sub-cb" id="chk-${bid}" checked
-            onclick="event.stopPropagation()" onchange="syncBHeader();recalcC();recalcGrand()">
-          &nbsp;B.2 外語配音 — ${lang.name}
-          <span class="sub-toggle-icon" id="icon-sub-${bid}">▼ 展開明細</span>
+          <input type="checkbox" class="sub-cb" id="chk-${bid}" ${isChecked?'checked':''}
+            onclick="event.stopPropagation()" onchange="b2Checked['${lang.key}']=this.checked;syncBHeader();recalcC();recalcGrand()">
+          &nbsp;B.2 ${lang.name}
+          <div class="mode-toggle" onclick="event.stopPropagation()" style="margin-left:auto;">
+            <button class="mode-toggle-btn ${curMode==='vo'?'active':''}" id="${lang.key}-btn-vo" onclick="setLangMode('${lang.key}','vo')">🎤 含配音員</button>
+            <button class="mode-toggle-btn ${curMode==='rec'?'active':''}" id="${lang.key}-btn-rec" onclick="setLangMode('${lang.key}','rec')">🎙️ 純錄音</button>
+          </div>
+          <span class="sub-toggle-icon" id="icon-sub-${bid}" style="margin-left:12px;">▼ 展開明細</span>
         </div>
         <div class="sub-body" id="sub-${bid}">
-          <div class="note">外語時長約中文的 1.25 倍；錄製時間約成品的 5 倍</div>
+          <div class="note">${noteText}</div>
           <table>
-            <thead><tr><th>項目</th><th>計算方式</th><th class="r">原價</th><th class="r">保守預估</th><th class="r">合作價</th></tr></thead>
+            <thead><tr><th>項目</th><th>單價</th><th>計算方式</th><th class="r">原價</th><th class="r">保守預估</th><th class="r">合作價</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
           </table>
         </div>
@@ -609,7 +661,8 @@ function recalcGrand(){
   // B
   let bOrig=0,bCollab=0,bMid=0,bAny=false;
   if($('chk-B1')&&$('chk-B1').checked){
-    const d=calcRows(B1,zhMins*REC_VO/60);
+    const {items,hrs}=getItemsAndHrs('b1');
+    const d=calcRows(items,hrs);
     $('sb1-orig').textContent=fmt(d.orig*TAX);
     $('sb1-mid').textContent=fmt(d.mid*TAX);
     $('sb1-collab').textContent=fmt(d.collab*TAX);
@@ -622,7 +675,8 @@ function recalcGrand(){
     const subWrap=e?.closest('.sub-wrap');
     const vals=subWrap?.querySelectorAll('.stot-val');
     if(e&&e.checked){
-      const d=calcRows(B2,fMins*REC_VO/60);
+      const {items,hrs}=getItemsAndHrs(l.key);
+      const d=calcRows(items,hrs);
       if(vals&&vals[0]){vals[0].textContent=fmt(d.orig*TAX);vals[1].textContent=fmt(d.mid*TAX);vals[2].textContent=fmt(d.collab*TAX);}
       bOrig+=d.orig*TAX;bCollab+=d.collab*TAX;bMid+=d.mid*TAX;bAny=true;
     } else {
@@ -652,18 +706,6 @@ function recalcGrand(){
     }
   } else {
     $('stot-C-tax').textContent='—';
-  }
-
-  // D
-  if($('chk-D')&&$('chk-D').checked){
-    const d=calcRows(D,zhMins*REC_A/60);
-    $('stot-D-orig').textContent=fmt(d.orig*TAX);
-    $('stot-D-mid').textContent=fmt(d.mid*TAX);
-    $('stot-D-collab').textContent=fmt(d.collab*TAX);
-    lines.push({lbl:'D｜純錄音費用',orig:d.orig*TAX,mid:d.mid*TAX,collab:d.collab*TAX});
-    origSum+=d.orig*TAX;collabSum+=d.collab*TAX;any=true;
-  } else {
-    $('stot-D-orig').textContent='—';$('stot-D-mid').textContent='—';$('stot-D-collab').textContent='—';
   }
 
   const midSum=(origSum+collabSum)/2;
@@ -697,14 +739,15 @@ function recalcGrand(){
 }
 
 // ── Main calculate ──
+let firstRun = true;
 function calculate(){
   if(mode==='chars'){
-    zhChars=parseFloat($('chars-input').value)||9000;
-    nItems=parseFloat($('chars-count').value)||30;
+    zhChars=parseFloat($('chars-input').value)||7500;
+    nItems=parseFloat($('chars-count').value)||25;
     zhMins=zhChars/CPM;
   } else {
     zhMins=parseFloat($('mins-input').value)||40;
-    nItems=parseFloat($('mins-count').value)||30;
+    nItems=parseFloat($('mins-count').value)||25;
     zhChars=zhMins*CPM;
   }
   fMins=zhMins*ZH2F;
@@ -719,25 +762,43 @@ function calculate(){
     <div class="param-item">每則外語時長<strong>${fmtTime(fMins/nItems)}</strong></div>
   `;
 
+  // Save current A checkbox state before rebuilding
+  const savedLangState={};
+  LANGS.forEach(l=>{ const e=$('lang-'+l.key); if(e) savedLangState[l.key]=e.checked; });
+
   // A rows
   $('trans-rows').innerHTML=LANGS.map(l=>{
     const pre=zhChars*l.rate,tax=pre*TAX;
     return `<div class="lang-row">
-      <input type="checkbox" class="sub-cb" id="lang-${l.key}" checked onchange="syncAHeader();recalcGrand()">
+      <input type="checkbox" class="sub-cb" id="lang-${l.key}" onchange="syncAHeader();recalcGrand()">
       <label for="lang-${l.key}">${l.label}（每字 NT$${l.rate}）</label>
       <div class="lang-nums"><span>${fmtN(zhChars)} 字</span><span>未稅 ${fmt(pre)}</span><span><strong>含稅 ${fmt(tax)}</strong></span></div>
     </div>`;
   }).join('');
 
+  // Apply defaults on first run; otherwise restore saved state
+  if(firstRun){
+    firstRun=false;
+    // A: only EN checked
+    LANGS.forEach(l=>{ const e=$('lang-'+l.key); if(e) e.checked=(l.key==='en'); });
+    // B: B1 checked, B2 handled by b2Checked initialisation above
+    $('chk-B1').checked=true;
+    syncBHeader();
+    // Sound: 無聲音設計
+    $('s-none').checked=true;
+    $('chk-C').checked=false;
+  } else {
+    // Restore A checkbox state after innerHTML rebuild
+    LANGS.forEach(l=>{ const e=$('lang-'+l.key); if(e&&savedLangState[l.key]!==undefined) e.checked=savedLangState[l.key]; });
+  }
+  syncAHeader();
+
   // B1 table
-  renderTableRows('tbl-b1', calcRows(B1, zhMins*REC_VO/60));
+  const b1data=calcRows(getItemsAndHrs('b1').items, getItemsAndHrs('b1').hrs);
+  renderTableRows('tbl-b1', b1data);
 
-  // B2 — always show all langs, only rebuild on first load (container empty) or recalc values
-  if(!$('b2-container').children.length) rebuildB2();
-  else recalcB2Values();
-
-  // D table
-  renderTableRows('tbl-d', calcRows(D, zhMins*REC_A/60));
+  // B2 — always rebuild to keep thead and values fresh
+  rebuildB2();
 
   recalcGrand();
   $('results').classList.add('visible');
@@ -765,8 +826,14 @@ function downloadPdf(){
   // Format datetime
   const now = new Date();
   const pad = n=>String(n).padStart(2,'0');
-  const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const dateStr = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+  const timeStr = `${pad(now.getHours())}${pad(now.getMinutes())}`;
+  const displayDate = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const displayTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  // Set document title → browser uses this as default PDF filename
+  const origTitle = document.title;
+  document.title = `ARTOGO語音導覽成本評估_${projName}_${dateStr}${timeStr}`;
 
   // Expand all collapsed sub-bodies temporarily
   const collapsed = document.querySelectorAll('.sub-body:not(.open)');
@@ -779,7 +846,7 @@ function downloadPdf(){
     <div style="font-family:'Noto Serif TC',serif;padding:18px 0 14px;border-bottom:2px solid #b8860b;margin-bottom:18px;">
       <div style="font-size:.72rem;letter-spacing:.15em;color:#b8860b;font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:4px;">ARTOGO 語音導覽成本估算報告</div>
       <div style="font-size:1.3rem;font-weight:700;color:#1a1208;">${projName}</div>
-      <div style="font-size:.76rem;color:#6b5c3e;font-family:'Space Mono',monospace;margin-top:4px;">${dateStr} ${timeStr} 下載</div>
+      <div style="font-size:.76rem;color:#6b5c3e;font-family:'Space Mono',monospace;margin-top:4px;">${displayDate} ${displayTime} 下載</div>
     </div>`;
   document.body.insertBefore(printHeader, document.body.firstChild);
 
@@ -812,6 +879,7 @@ function downloadPdf(){
       printHeader.remove();
       style.remove();
       hideEls.forEach(el=>delete el.dataset.hide);
+      document.title = origTitle;
     }, 1000);
   }, 200);
 }
