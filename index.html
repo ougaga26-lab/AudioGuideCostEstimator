@@ -86,7 +86,7 @@ h1 span{color:var(--gold);}
 
 /* Mode toggle switch (VO / REC) */
 .mode-toggle{display:flex;align-items:center;gap:0;border-radius:20px;overflow:hidden;border:1px solid #c8a855;flex-shrink:0;}
-.mode-toggle-btn{background:transparent;border:none;padding:4px 10px;font-size:.72rem;font-family:'Space Mono',monospace;cursor:pointer;color:#c8a855;transition:all .2s;white-space:nowrap;}
+.mode-toggle-btn{background:transparent;border:none;padding:4px 12px;font-size:.72rem;font-family:'Space Mono',monospace;cursor:pointer;color:#c8a855;transition:all .2s;white-space:nowrap;flex:1;text-align:center;}
 .mode-toggle-btn.active{background:var(--gold);color:var(--ink);font-weight:bold;}
 .mode-toggle-btn:hover:not(.active){background:rgba(200,168,85,.15);}
 
@@ -149,8 +149,8 @@ td.num{font-family:'Space Mono',monospace;}
 .gp-line .vals .v-orig{color:rgba(240,224,176,.6);}
 .gp-line .vals .v-mid{color:var(--gold-l);}
 .gp-line .vals .v-collab{color:#a0d090;}
-.gp-total-row{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:0;margin-top:6px;}
-.gp-tot{text-align:center;padding:0 18px;}
+.gp-total-row{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 0;margin-top:6px;}
+.gp-tot{text-align:center;padding:0 18px;min-width:0;}
 .gp-tot-lbl{font-size:.67rem;color:var(--gold-p);font-family:'Space Mono',monospace;display:block;margin-bottom:3px;}
 .gp-tot-val{font-family:'Space Mono',monospace;font-size:1.1rem;color:var(--gold-l);font-weight:bold;}
 .gp-tot-val.big{font-size:1.35rem;color:var(--gold);}
@@ -178,12 +178,91 @@ td.num{font-family:'Space Mono',monospace;}
 
 .ornament{text-align:center;color:var(--gold-p);letter-spacing:.5em;padding:6px 0 0;user-select:none;}
 
-@media(max-width:520px){
-  .input-row label{min-width:86px;font-size:.72rem;}
-  .cards-row{flex-direction:column;align-items:center;}
-  .mode-card{max-width:100%;}
+/* ── Tablet (max 768px) ── */
+@media(max-width:768px){
+  header{padding:36px 16px 24px;}
+  .results-section{padding:0 12px 48px;}
+  .mode-section{padding:0 12px 20px;}
+
+  /* params bar: 3-col grid */
+  .params-bar{gap:6px 0;padding:12px 14px;}
+  .param-item{min-width:33.33%;font-size:.75rem;}
+
+  /* tables: hide 計算方式 col on tablet */
+  table th:nth-child(3), table td:nth-child(3){display:none;}
+
+  /* sec-total: wrap nicely */
+  .sec-total,.sub-sec-total{gap:6px 16px;padding:11px 14px;}
+  .stot-val{font-size:.9rem;}
+  .stot-val.gold{font-size:1rem;}
+
+  /* grand panel */
+  .gp-tot{padding:0 12px;}
+  .gp-tot-val{font-size:1rem;}
+  .gp-tot-val.big{font-size:1.2rem;}
+}
+
+/* ── Mobile (max 480px) ── */
+@media(max-width:480px){
+  header{padding:28px 14px 18px;}
+  h1{font-size:1.3rem;}
+  .subtitle{font-size:.68rem;letter-spacing:.12em;}
+
+  .results-section{padding:0 10px 40px;}
+  .mode-section{padding:0 10px 18px;}
+  .cards-row{flex-direction:column;align-items:stretch;}
+  .mode-card{max-width:100%;min-width:unset;}
+  .input-row label{min-width:90px;font-size:.76rem;}
+
+  /* params: 3 per row (6 items total = 2 rows) */
+  .params-bar{padding:10px 12px;gap:4px 0;}
+  .param-item{min-width:33.33%;font-size:.72rem;}
+  .param-item strong{font-size:.8rem;}
+
+  /* sub-hd: stack in 2 rows */
+  .sub-hd{flex-wrap:wrap;gap:6px;padding:8px 12px;}
+  .mode-toggle{order:3;width:100%;justify-content:flex-start;margin-left:0 !important;}
+  .sub-toggle-icon{order:2;margin-left:auto !important;}
+
+  /* tables: hide 單價 AND 計算方式 cols, keep item/orig/mid/collab */
+  table{font-size:.75rem;}
+  table th:nth-child(2), table td:nth-child(2){display:none;}
+  table th:nth-child(3), table td:nth-child(3){display:none;}
+  th,td{padding:6px 6px;}
+
+  /* lang rows in A */
+  .lang-row{flex-wrap:wrap;gap:4px;}
+  .lang-nums{width:100%;justify-content:flex-start;gap:8px;font-size:.72rem;}
+
+  /* sound grid: 1 col */
   .sound-grid{grid-template-columns:1fr;}
-  .gp-tot{padding:0 10px;}
+
+  /* sec-total / sub-sec-total on mobile: label full width, stots in a flex row below */
+  .sec-total,.sub-sec-total{flex-wrap:wrap;gap:8px 14px;padding:10px 12px;}
+  .sec-total-label,.sub-sec-total .sec-total-label{width:100%;font-size:.78rem;margin-bottom:2px;}
+  .stot-lbl{font-size:.65rem;}
+  .stot-val{font-size:.88rem;}
+  .stot-val.gold{font-size:.96rem;}
+  .stot-val.mid{font-size:.88rem;}
+
+  /* grand panel */
+  .gp-header{flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:10px;}
+  .gp-label-main{font-size:.9rem;}
+  .gp-title{font-size:.6rem;}
+  .gp-line{flex-direction:column;gap:2px;padding:5px 0;}
+  .gp-line .vals{flex-wrap:wrap;gap:4px;font-size:.75rem;}
+  .gp-total-row{flex-direction:column;gap:8px;align-items:center;}
+  .gp-sep{display:none;}
+  .gp-tot{padding:4px 0;width:100%;}
+  .gp-tot-val{font-size:.92rem;}
+  .gp-tot-val.big{font-size:1.1rem;}
+  .gp-sep{font-size:1rem;}
+
+  /* cat header */
+  .cat-hd-label{font-size:.82rem;}
+
+  /* pdf btn */
+  .pdf-btn{padding:10px 24px;font-size:.84rem;}
 }
 </style>
 </head>
@@ -756,8 +835,7 @@ function calculate(){
     <div class="param-item">中文總字數<strong>${fmtN(zhChars)} 字</strong></div>
     <div class="param-item">中文總時長<strong>${fmtTime(zhMins)}</strong></div>
     <div class="param-item">外語總時長<strong>${fmtTime(fMins)}</strong></div>
-    <div class="param-item">總共則數<strong>${nItems} 則</strong></div>
-    <div class="param-item">每則字數<strong>${(zhChars/nItems).toFixed(0)} 字</strong></div>
+    <div class="param-item">每則中文字數<strong>${(zhChars/nItems).toFixed(0)} 字</strong></div>
     <div class="param-item">每則中文時長<strong>${fmtTime(zhMins/nItems)}</strong></div>
     <div class="param-item">每則外語時長<strong>${fmtTime(fMins/nItems)}</strong></div>
   `;
