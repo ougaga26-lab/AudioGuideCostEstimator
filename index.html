@@ -901,7 +901,6 @@ function downloadPdf(){
   const projName = $('project-name').value.trim() || '未命名專案';
   closePdfModal();
 
-  // Format datetime
   const now = new Date();
   const pad = n=>String(n).padStart(2,'0');
   const dateStr = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
@@ -909,54 +908,175 @@ function downloadPdf(){
   const displayDate = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   const displayTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-  // Set document title → browser uses this as default PDF filename
-  const origTitle = document.title;
   document.title = `ARTOGO語音導覽成本評估_${projName}_${dateStr}${timeStr}`;
+  const origTitle = document.title;
 
-  // Expand all collapsed sub-bodies temporarily
+  // ── 1. Expand all collapsed sub-bodies ──
   const collapsed = document.querySelectorAll('.sub-body:not(.open)');
   collapsed.forEach(el=>el.style.display='block');
 
-  // Inject print header
+  // ── 2. Mark unchecked items for hiding ──
+  const printHidden = [];
+
+  // A: hide unchecked lang rows; hide whole A section if A unchecked
+  const chkA = $('chk-A');
+  if(!chkA || !chkA.checked){
+    const catA = chkA?.closest('.cat-wrap');
+    if(catA){catA.dataset.phide='1'; printHidden.push(catA);}
+  } else {
+    // hide individual lang rows that are unchecked
+    LANGS.forEach(l=>{
+      const e=$('lang-'+l.key);
+      if(e && !e.checked){
+        const row=e.closest('.lang-row');
+        if(row){row.dataset.phide='1'; printHidden.push(row);}
+      }
+    });
+  }
+
+  // B: hide whole B section if all unchecked; hide individual B.1 / B.2 sub-wraps
+  const chkBAll=$('chk-B-all');
+  const b1Checked=$('chk-B1')&&$('chk-B1').checked;
+  const anyB2Checked=LANGS.some(l=>{const e=$('chk-B2_'+l.key);return e&&e.checked;});
+  if(!b1Checked && !anyB2Checked){
+    const catB=$('cat-B');
+    if(catB){catB.dataset.phide='1'; printHidden.push(catB);}
+  } else {
+    // hide B.1 sub-wrap if unchecked
+    if(!b1Checked){
+      const b1wrap=$('chk-B1')?.closest('.sub-wrap');
+      if(b1wrap){b1wrap.dataset.phide='1'; printHidden.push(b1wrap);}
+    }
+    // hide each B.2 sub-wrap if unchecked
+    LANGS.forEach(l=>{
+      const e=$('chk-B2_'+l.key);
+      if(!e||!e.checked){
+        const sw=e?.closest('.sub-wrap');
+        if(sw){sw.dataset.phide='1'; printHidden.push(sw);}
+      }
+    });
+  }
+
+  // C: hide if unchecked
+  if(!$('chk-C')||!$('chk-C').checked){
+    const catC=$('chk-C')?.closest('.cat-wrap');
+    if(catC){catC.dataset.phide='1'; printHidden.push(catC);}
+  }
+
+  // D: hide if unchecked
+  const chkD=$('chk-D');
+  if(!chkD||!chkD.checked){
+    const catD=chkD?.closest('.cat-wrap');
+    if(catD){catD.dataset.phide='1'; printHidden.push(catD);}
+  }
+
+  // ── 3. Inject print header ──
   const printHeader = document.createElement('div');
   printHeader.id = 'print-header';
   printHeader.innerHTML = `
-    <div style="font-family:'Noto Serif TC',serif;padding:18px 0 14px;border-bottom:2px solid #b8860b;margin-bottom:18px;">
-      <div style="font-size:.72rem;letter-spacing:.15em;color:#b8860b;font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:4px;">ARTOGO 語音導覽成本估算報告</div>
-      <div style="font-size:1.3rem;font-weight:700;color:#1a1208;">${projName}</div>
-      <div style="font-size:.76rem;color:#6b5c3e;font-family:'Space Mono',monospace;margin-top:4px;">${displayDate} ${displayTime} 下載</div>
+    <div style="font-family:'Noto Serif TC',serif;padding:18px 0 14px;border-bottom:2px solid #333;margin-bottom:18px;">
+      <div style="font-size:.7rem;letter-spacing:.15em;color:#555;font-family:monospace;text-transform:uppercase;margin-bottom:4px;">ARTOGO 語音導覽成本估算報告</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#111;">${projName}</div>
+      <div style="font-size:.75rem;color:#444;font-family:monospace;margin-top:4px;">${displayDate} ${displayTime} 下載</div>
     </div>`;
   document.body.insertBefore(printHeader, document.body.firstChild);
 
-  // Hide non-content elements for print
-  const hideEls = document.querySelectorAll('header, .mode-section, .pdf-btn-wrap, .modal-overlay');
+  // ── 4. Hide non-content UI elements ──
+  const hideEls = document.querySelectorAll('header, .mode-section, .pdf-btn-wrap, .modal-overlay, .ornament');
   hideEls.forEach(el=>el.dataset.hide='1');
 
-  // Print style
+  // ── 5. Inject print CSS — black text on white, hide interactive elements ──
   const style = document.createElement('style');
   style.id = 'print-style';
   style.textContent = `
     @media print {
       @page { size: A4; margin: 14mm 12mm; }
+
+      * { color: #111 !important; background: white !important;
+          border-color: #bbb !important; box-shadow: none !important;
+          animation: none !important; text-shadow: none !important; }
+
       body { background: white !important; }
-      [data-hide="1"] { display: none !important; }
-      .results-section { padding: 0 !important; max-width: 100% !important; }
-      .cat-wrap { box-shadow: none !important; page-break-inside: avoid; }
-      .grand-panel { page-break-inside: avoid; }
-      .animate { animation: none !important; }
-      .sub-body { display: block !important; }
-      .pdf-btn-wrap { display: none !important; }
+
+      [data-hide="1"], [data-phide="1"] { display: none !important; }
+
+      .results-section { display: block !important; padding: 0 !important; max-width: 100% !important; }
+
+      /* hide all interactive controls */
+      .mode-toggle, .sub-toggle-icon, .cb, .sub-cb,
+      input[type=checkbox], input[type=radio],
+      .radio-row input, button { display: none !important; }
+
+      /* keep radio labels visible */
+      .radio-row { padding-left: 4px; }
+      .radio-row label { display: block !important; font-size: .8rem !important; }
+
+      /* section headers */
+      .cat-hd { background: #222 !important; }
+      .cat-hd * { color: #fff !important; }
+      .cat-hd-label { color: #fff !important; }
+
+      .sub-hd { background: #555 !important; }
+      .sub-hd * { color: #fff !important; }
+
+      /* sub-bodies always open */
+      .sub-body { display: block !important; background: white !important; }
+
+      /* totals bars */
+      .sec-total { background: #222 !important; border-top: 2px solid #333 !important; }
+      .sec-total * { color: #fff !important; }
+      .sec-total-label { color: #ddd !important; }
+      .stot-lbl { color: #bbb !important; }
+      .stot-val, .stot-val.gold, .stot-val.mid { color: #fff !important; }
+
+      .sub-sec-total { background: #f0f0f0 !important; border-top: 1px solid #bbb !important; }
+      .sub-sec-total * { color: #111 !important; }
+      .sub-sec-total .stot-lbl { color: #555 !important; }
+
+      /* params bar */
+      .params-bar { border: 1px solid #bbb !important; background: #f8f8f8 !important; }
+      .param-item, .param-item strong { color: #111 !important; }
+
+      /* tables */
+      table { font-size: .78rem !important; }
+      th { color: #444 !important; border-bottom: 1px solid #999 !important; }
+      td { border-bottom: 1px solid #ddd !important; color: #111 !important; }
+      td.dim { color: #555 !important; }
+
+      /* grand panel */
+      .grand-panel { background: #1a1a1a !important; page-break-inside: avoid; }
+      .grand-panel * { color: #fff !important; }
+      .gp-title { color: #bbb !important; }
+      .gp-label-main { color: #fff !important; }
+      .gp-line .lbl { color: #ddd !important; }
+      .gp-line .vals, .gp-line .v-orig, .gp-line .v-mid, .gp-line .v-collab { color: #fff !important; }
+      .gp-tot-lbl { color: #bbb !important; }
+      .gp-tot-val, .gp-tot-val.big { color: #fff !important; }
+      .gp-sep { color: #888 !important; }
+
+      /* cat-wrap */
+      .cat-wrap { border: 1px solid #bbb !important; page-break-inside: avoid; margin-bottom: 14px !important; }
+
+      /* note */
+      .note { border-left: 2px solid #888 !important; color: #444 !important; background: #f8f8f8 !important; }
+
+      /* lang rows */
+      .lang-row { border-bottom: 1px solid #ddd !important; }
+      .lang-nums { color: #333 !important; }
+
+      /* sound grid */
+      .sound-lang-row { border: 1px solid #bbb !important; background: #f8f8f8 !important; }
     }`;
   document.head.appendChild(style);
 
   setTimeout(()=>{
     window.print();
-    // Restore after print
     setTimeout(()=>{
       collapsed.forEach(el=>el.style.display='');
       printHeader.remove();
       style.remove();
       hideEls.forEach(el=>delete el.dataset.hide);
+      printHidden.forEach(el=>delete el.dataset.phide);
       document.title = origTitle;
     }, 1000);
   }, 200);
