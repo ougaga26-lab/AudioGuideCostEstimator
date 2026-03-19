@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARTOGO 語音導覽成本估算器</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Noto+Serif+TC:wght@300;400;500&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#1a1208; --paper:#f5f0e8; --gold:#b8860b;
+  --gold-l:#d4a843; --gold-p:#f0e0b0; --mid:#7a5c10;
+  --sh:rgba(26,18,8,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--paper);color:var(--ink);font-family:'Noto Serif TC',serif;min-height:100vh;
+  background-image:radial-gradient(ellipse at 18% 8%,rgba(184,134,11,.06) 0%,transparent 50%),
+                   radial-gradient(ellipse at 82% 92%,rgba(139,58,15,.05) 0%,transparent 50%);}
+
+/* Header */
+header{text-align:center;padding:50px 20px 32px;}
+.brand-line{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:5px;}
+.brand-line::before,.brand-line::after{content:'';flex:1;max-width:90px;height:1px;}
+.brand-line::before{background:linear-gradient(to right,transparent,var(--gold));}
+.brand-line::after {background:linear-gradient(to left,transparent,var(--gold));}
+h1{font-family:'Playfair Display',serif;font-size:clamp(1.45rem,4vw,2.5rem);font-weight:700;color:var(--ink);}
+h1 span{color:var(--gold);}
+.subtitle{font-size:.76rem;letter-spacing:.2em;color:var(--gold);font-family:'Space Mono',monospace;text-transform:uppercase;margin-top:4px;}
+
+/* Mode cards */
+.mode-section{text-align:center;padding:0 20px 24px;}
+.mode-label{font-size:.88rem;color:#6b5c3e;margin-bottom:16px;letter-spacing:.06em;}
+.cards-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;max-width:720px;margin:0 auto;}
+.mode-card{flex:1;min-width:250px;max-width:310px;border:1.5px solid var(--gold-p);border-radius:4px;padding:20px 20px 16px;cursor:pointer;background:#fff9f0;transition:all .3s;position:relative;text-align:left;overflow:hidden;}
+.mode-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-l));transform:scaleX(0);transform-origin:left;transition:transform .35s;}
+.mode-card:hover,.mode-card.active{border-color:var(--gold);box-shadow:0 5px 18px var(--sh);}
+.mode-card:hover::before,.mode-card.active::before{transform:scaleX(1);}
+.card-badge{position:absolute;top:9px;right:9px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;opacity:0;transition:opacity .3s;}
+.mode-card.active .card-badge{opacity:1;}
+.card-icon{font-size:1.4rem;margin-bottom:8px;display:block;}
+.card-title{font-size:.92rem;font-weight:500;color:var(--ink);margin-bottom:12px;}
+.input-group{margin-top:8px;}
+.input-row{display:flex;align-items:center;margin-bottom:8px;gap:6px;}
+.input-row label{font-size:.76rem;color:#6b5c3e;white-space:nowrap;min-width:106px;}
+.input-row input{flex:1;border:1px solid #d4c49a;border-radius:2px;padding:5px 8px;font-family:'Space Mono',monospace;font-size:.86rem;color:var(--ink);background:var(--paper);outline:none;transition:border-color .2s;min-width:0;}
+.input-row input:focus{border-color:var(--gold);background:#fffdf7;}
+.input-row .unit{font-size:.74rem;color:#8b7355;white-space:nowrap;}
+
+/* Results */
+.results-section{max-width:920px;margin:0 auto;padding:0 20px 60px;display:none;}
+.results-section.visible{display:block;}
+
+/* Params bar */
+.params-bar{background:#fff9f0;border:1px solid var(--gold-p);border-radius:4px;padding:14px 18px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:center;}
+.param-item{font-size:.8rem;font-family:'Space Mono',monospace;color:#6b5c3e;line-height:1.75;text-align:center;}
+.param-item strong{color:var(--ink);font-size:.9rem;display:block;}
+
+/* ── Category outer wrapper ── */
+.cat-wrap{margin-bottom:28px;border:1px solid var(--gold-p);border-radius:4px;overflow:hidden;background:#fff9f0;box-shadow:0 2px 8px var(--sh);animation:slideUp .4s ease both;}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Cat header (top-level A/B/C/D) */
+.cat-hd{background:linear-gradient(135deg,var(--ink) 0%,#2d2010 100%);color:var(--gold-l);padding:11px 15px;display:flex;align-items:center;gap:8px;user-select:none;}
+.cat-hd-label{display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;font-size:.86rem;letter-spacing:.05em;}
+
+/* Sub-section (B.1, B.2 each lang) inside B */
+.sub-wrap{border-top:1px solid rgba(255,255,255,.08);}
+.sub-hd{background:#3d2e18;color:#e8d49a;padding:9px 15px 9px 22px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:.84rem;letter-spacing:.04em;}
+.sub-hd:hover{background:#4e3c22;}
+.sub-toggle-icon{margin-left:auto;font-family:'Space Mono',monospace;font-size:.7rem;color:#c8a855;}
+
+/* Sub body (detail rows – collapsed by default) */
+.sub-body{display:none;padding:14px 16px 0;background:#fffdf8;border-top:1px solid var(--gold-p);}
+.sub-body.open{display:block;}
+
+/* Cat body (outer body for A, C, D) */
+.cat-body{padding:14px 16px;}
+
+/* Inline totals bar — dark bg, white text */
+.sec-total{background:linear-gradient(135deg,#2a1e0a,#3d2e14);border-top:2px solid var(--gold);padding:13px 18px;display:flex;flex-wrap:wrap;gap:8px 26px;justify-content:flex-end;align-items:center;}
+.sec-total-label{font-size:.82rem;color:#f0d888;font-family:'Space Mono',monospace;letter-spacing:.04em;margin-right:auto;font-weight:bold;}
+.stot{text-align:right;}
+.stot-lbl{display:block;font-size:.7rem;color:#c8a855;font-family:'Space Mono',monospace;}
+.stot-val{font-family:'Space Mono',monospace;font-size:1rem;color:#f5e8c0;font-weight:bold;}
+.stot-val.gold{color:#ffd055;font-size:1.1rem;font-weight:bold;}
+.stot-val.mid{color:#ffe0a0;font-size:1rem;font-weight:bold;}
+
+/* Sub-level totals (B.1, B.2 each) — light bg, dark text */
+.sub-sec-total{background:linear-gradient(135deg,#f5efd8,#ede4c4);border-top:1px solid var(--gold-p);padding:13px 18px;display:flex;flex-wrap:wrap;gap:8px 26px;justify-content:flex-end;align-items:center;}
+.sub-sec-total .sec-total-label{font-size:.82rem;color:#3a2c10;font-family:'Space Mono',monospace;letter-spacing:.04em;margin-right:auto;font-weight:bold;}
+.sub-sec-total .stot-lbl{display:block;font-size:.7rem;color:#6b5228;font-family:'Space Mono',monospace;}
+.sub-sec-total .stot-val{font-family:'Space Mono',monospace;font-size:1rem;color:#2a1e08;font-weight:bold;}
+.sub-sec-total .stot-val.gold{color:#7a5500;font-size:1.1rem;font-weight:bold;}
+.sub-sec-total .stot-val.mid{color:#5a3e00;font-size:1rem;font-weight:bold;}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:.8rem;}
+th{text-align:left;padding:5px 8px;font-size:.67rem;color:#8b7355;letter-spacing:.06em;border-bottom:1px solid var(--gold-p);font-family:'Space Mono',monospace;font-weight:normal;}
+th.r,td.r{text-align:right;}
+td{padding:7px 8px;border-bottom:1px solid #ede6d6;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+td.dim{font-size:.72rem;color:#8b7355;}
+td.num{font-family:'Space Mono',monospace;}
+
+/* Checkboxes */
+.cb{appearance:none;-webkit-appearance:none;width:15px;height:15px;border-radius:3px;border:1.5px solid var(--gold-p);background:transparent;cursor:pointer;flex-shrink:0;position:relative;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;vertical-align:middle;}
+.cb:checked{background:var(--gold-l);border-color:var(--gold-l);}
+.cb:checked::after{content:'✓';color:#fff;font-size:9px;position:absolute;}
+
+.sub-cb{appearance:none;-webkit-appearance:none;width:13px;height:13px;border-radius:2px;border:1.5px solid #c8b888;background:var(--paper);cursor:pointer;flex-shrink:0;position:relative;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;vertical-align:middle;}
+.sub-cb:checked{background:var(--gold);border-color:var(--gold);}
+.sub-cb:checked::after{content:'✓';color:#fff;font-size:8px;position:absolute;}
+
+/* Radio */
+.radio-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.radio-row input[type=radio]{accent-color:var(--gold);width:13px;height:13px;cursor:pointer;}
+.radio-row label{font-size:.84rem;cursor:pointer;}
+
+/* Note */
+.note{font-size:.73rem;color:#8b7355;font-style:italic;line-height:1.6;margin-bottom:10px;padding:7px 10px;background:var(--paper);border-left:2px solid var(--gold-p);}
+
+/* Lang rows (A translation) */
+.lang-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #ede6d6;}
+.lang-row:last-child{border-bottom:none;}
+.lang-row label{flex:1;font-size:.83rem;cursor:pointer;}
+.lang-nums{font-family:'Space Mono',monospace;font-size:.76rem;display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;color:#6b5c3e;}
+.lang-nums strong{color:var(--ink);}
+
+/* C sound grid */
+.sound-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.sound-lang-row{background:var(--paper);border:1px solid var(--gold-p);border-radius:3px;padding:8px 10px;font-size:.78rem;}
+.sound-lang-row .slang{color:var(--ink);font-weight:500;margin-bottom:3px;}
+.sound-lang-row .snums{font-family:'Space Mono',monospace;color:#6b5c3e;font-size:.72rem;display:flex;gap:8px;flex-wrap:wrap;}
+
+/* Grand total panel */
+.grand-panel{background:linear-gradient(135deg,#2d2010 0%,var(--ink) 100%);color:var(--paper);border-radius:4px;padding:20px 22px;margin-top:10px;animation:slideUp .4s .35s ease both;position:relative;}
+.gp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.gp-title{font-size:.65rem;letter-spacing:.1em;color:var(--gold-p);font-family:'Space Mono',monospace;text-transform:uppercase;}
+.gp-label-main{font-size:1rem;font-weight:bold;color:var(--gold-l);font-family:'Noto Serif TC',serif;letter-spacing:.04em;}
+.gp-breakdown{margin-bottom:14px;border-bottom:1px solid rgba(240,224,176,.2);padding-bottom:12px;}
+.gp-line{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:.82rem;}
+.gp-line .lbl{color:var(--gold-p);}
+.gp-line .vals{font-family:'Space Mono',monospace;color:var(--gold-l);font-size:.8rem;display:flex;gap:10px;}
+.gp-line .vals .v-orig{color:rgba(240,224,176,.6);}
+.gp-line .vals .v-mid{color:var(--gold-l);}
+.gp-line .vals .v-collab{color:#a0d090;}
+.gp-total-row{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:0;margin-top:6px;}
+.gp-tot{text-align:center;padding:0 18px;}
+.gp-tot-lbl{font-size:.67rem;color:var(--gold-p);font-family:'Space Mono',monospace;display:block;margin-bottom:3px;}
+.gp-tot-val{font-family:'Space Mono',monospace;font-size:1.1rem;color:var(--gold-l);font-weight:bold;}
+.gp-tot-val.big{font-size:1.35rem;color:var(--gold);}
+.gp-sep{color:rgba(240,224,176,.4);font-size:1.2rem;padding:0 2px;}
+.gp-empty{color:#6b5540;font-size:.84rem;text-align:center;padding:8px 0;}
+
+/* Download PDF button */
+.pdf-btn-wrap{text-align:center;padding:24px 0 8px;}
+.pdf-btn{background:transparent;border:1.5px solid var(--gold);color:var(--gold);padding:11px 36px;font-family:'Noto Serif TC',serif;font-size:.9rem;letter-spacing:.1em;cursor:pointer;border-radius:2px;transition:all .3s;display:inline-flex;align-items:center;gap:8px;}
+.pdf-btn:hover{background:var(--gold);color:var(--ink);}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,18,8,.6);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--paper);border:1px solid var(--gold-p);border-radius:6px;padding:28px 28px 22px;min-width:300px;max-width:420px;width:90%;box-shadow:0 16px 40px rgba(26,18,8,.4);}
+.modal-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--ink);margin-bottom:18px;}
+.modal-label{font-size:.8rem;color:#6b5c3e;display:block;margin-bottom:6px;font-family:'Space Mono',monospace;}
+.modal-input{width:100%;border:1px solid #d4c49a;border-radius:2px;padding:9px 12px;font-family:'Noto Serif TC',serif;font-size:.92rem;color:var(--ink);background:#fffdf7;outline:none;transition:border-color .2s;}
+.modal-input:focus{border-color:var(--gold);}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.modal-cancel{background:transparent;border:1px solid #d4c49a;color:#6b5c3e;padding:8px 22px;font-family:'Noto Serif TC',serif;font-size:.88rem;cursor:pointer;border-radius:2px;transition:all .2s;}
+.modal-cancel:hover{border-color:var(--gold);color:var(--ink);}
+.modal-confirm{background:linear-gradient(135deg,var(--ink),#3d2e1a);border:none;color:var(--gold-l);padding:8px 22px;font-family:'Noto Serif TC',serif;font-size:.88rem;cursor:pointer;border-radius:2px;transition:all .2s;}
+.modal-confirm:hover{color:var(--gold);}
+
+.ornament{text-align:center;color:var(--gold-p);letter-spacing:.5em;padding:6px 0 0;user-select:none;}
+
+@media(max-width:520px){
+  .input-row label{min-width:86px;font-size:.72rem;}
+  .cards-row{flex-direction:column;align-items:center;}
+  .mode-card{max-width:100%;}
+  .sound-grid{grid-template-columns:1fr;}
+  .gp-tot{padding:0 10px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand-line">
+    <h1><span>ARTOGO</span> 語音導覽成本估算器</h1>
+  </div>
+  <p class="subtitle">Audio Guide Cost Estimator</p>
+</header>
+
+<section class="mode-section">
+  <p class="mode-label">請選擇您估算的方式</p>
+  <div class="cards-row">
+    <div class="mode-card active" id="card-chars" onclick="selectMode('chars')">
+      <span class="card-badge">✓</span>
+      <span class="card-icon">✍️</span>
+      <div class="card-title">以中文總字數估算</div>
+      <div class="input-group">
+        <div class="input-row"><label>中文總字數</label><input type="number" id="chars-input" value="9000" min="1" oninput="onInput()"><span class="unit">字</span></div>
+        <div class="input-row"><label>總共則數</label><input type="number" id="chars-count" value="30" min="1" oninput="onInput()"><span class="unit">則</span></div>
+      </div>
+    </div>
+    <div class="mode-card" id="card-mins" onclick="selectMode('mins')">
+      <span class="card-badge">✓</span>
+      <span class="card-icon">⏱️</span>
+      <div class="card-title">以中文語音導覽時長估算</div>
+      <div class="input-group">
+        <div class="input-row"><label>中文總導覽時長</label><input type="number" id="mins-input" value="40" min="1" oninput="onInput()"><span class="unit">分鐘</span></div>
+        <div class="input-row"><label>總共則數</label><input type="number" id="mins-count" value="30" min="1" oninput="onInput()"><span class="unit">則</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<section class="results-section" id="results">
+
+  <div class="params-bar" id="params-bar"></div>
+
+  <!-- A: Translation -->
+  <div class="cat-wrap" style="animation-delay:.04s">
+    <div class="cat-hd">
+      <label class="cat-hd-label" onclick="event.stopPropagation()">
+        <input type="checkbox" class="cb" id="chk-A" checked onchange="toggleAllA(this.checked)">
+        📝 A｜翻譯費用
+      </label>
+    </div>
+    <div class="cat-body" id="body-A">
+      <div class="note">各語系可單獨勾選。勾選後將在 B.2 自動新增對應的配音區塊。</div>
+      <div id="trans-rows"></div>
+    </div>
+    <div class="sec-total" id="sec-tot-A">
+      <span class="sec-total-label">A 翻譯費用 小計</span>
+      <div class="stot"><span class="stot-lbl">含稅金額</span><span class="stot-val gold" id="stot-A-tax">—</span></div>
+    </div>
+  </div>
+
+  <!-- B: Voiceover (B1 + dynamic B2) -->
+  <div class="cat-wrap" style="animation-delay:.09s" id="cat-B">
+    <div class="cat-hd">
+      <label class="cat-hd-label" onclick="event.stopPropagation()">
+        <input type="checkbox" class="cb" id="chk-B-all" checked onchange="toggleAllB(this.checked)">
+        🎤 B｜真人配音費用
+      </label>
+    </div>
+    <!-- B.1 -->
+    <div class="sub-wrap">
+      <div class="sub-hd" onclick="toggleSubBody('sub-b1')">
+        <input type="checkbox" class="sub-cb" id="chk-B1" checked onclick="event.stopPropagation()" onchange="syncBHeader();recalcC();recalcGrand()">
+        &nbsp;B.1 中文配音
+        <span class="sub-toggle-icon" id="icon-sub-b1">▼ 展開明細</span>
+      </div>
+      <div class="sub-body" id="sub-b1">
+        <div class="note">錄製時間約成品時間的 5 倍（10 分鐘成品 ≈ 50 分鐘錄製）</div>
+        <table>
+          <thead><tr><th>項目</th><th>計算方式</th><th class="r">原價</th><th class="r">保守預估</th><th class="r">合作價</th></tr></thead>
+          <tbody id="tbl-b1"></tbody>
+        </table>
+      </div>
+      <!-- B.1 sub-total always visible -->
+      <div class="sub-sec-total" id="subtot-b1">
+        <span class="sec-total-label">B.1 中文配音</span>
+        <div class="stot"><span class="stot-lbl">原價（含稅）</span><span class="stot-val" id="sb1-orig">—</span></div>
+        <div class="stot"><span class="stot-lbl">保守預估（含稅）</span><span class="stot-val mid" id="sb1-mid">—</span></div>
+        <div class="stot"><span class="stot-lbl">合作價（含稅）</span><span class="stot-val gold" id="sb1-collab">—</span></div>
+      </div>
+    </div>
+    <!-- B.2 dynamic blocks injected here -->
+    <div id="b2-container"></div>
+    <!-- B grand total -->
+    <div class="sec-total" id="sec-tot-B">
+      <span class="sec-total-label">B 配音費用 小計（全部勾選語系）</span>
+      <div class="stot"><span class="stot-lbl">原價（含稅）</span><span class="stot-val" id="stot-B-orig">—</span></div>
+      <div class="stot"><span class="stot-lbl">保守預估（含稅）</span><span class="stot-val mid" id="stot-B-mid">—</span></div>
+      <div class="stot"><span class="stot-lbl">合作價（含稅）</span><span class="stot-val gold" id="stot-B-collab">—</span></div>
+    </div>
+  </div>
+
+  <!-- C: Sound Design -->
+  <div class="cat-wrap" style="animation-delay:.18s">
+    <div class="cat-hd">
+      <label class="cat-hd-label" onclick="event.stopPropagation()">
+        <input type="checkbox" class="cb" id="chk-C" checked onchange="recalcGrand()">
+        🎵 C｜聲音設計
+      </label>
+    </div>
+    <div class="cat-body" id="body-C">
+      <div class="note" id="sound-note">依配音語系數量計費，每種語系的語音各自需要聲音設計。</div>
+      <div class="radio-row">
+        <input type="radio" name="sound" id="s-simple" value="325" onchange="recalcC();recalcGrand()">
+        <label for="s-simple">簡易背景音樂版 — NT$325 / 件</label>
+      </div>
+      <div class="radio-row">
+        <input type="radio" name="sound" id="s-complex" value="480" checked onchange="recalcC();recalcGrand()">
+        <label for="s-complex">複雜音效＋背景 — NT$480 / 件</label>
+      </div>
+      <!-- per-lang breakdown -->
+      <div id="sound-grid" class="sound-grid" style="margin-top:8px;"></div>
+    </div>
+    <div class="sec-total" id="sec-tot-C">
+      <span class="sec-total-label">C 聲音設計 小計</span>
+      <div class="stot"><span class="stot-lbl">合計（含稅）</span><span class="stot-val gold" id="stot-C-tax">—</span></div>
+    </div>
+  </div>
+
+  <!-- D: Pure Recording -->
+  <div class="cat-wrap" style="animation-delay:.24s">
+    <div class="cat-hd">
+      <label class="cat-hd-label" onclick="event.stopPropagation()">
+        <input type="checkbox" class="cb" id="chk-D" onchange="recalcGrand()">
+        🎙️ D｜純錄音費用（不含配音員）
+      </label>
+    </div>
+    <div class="sub-wrap">
+      <div class="sub-hd" onclick="toggleSubBody('sub-d')">
+        &nbsp;錄音費用明細
+        <span class="sub-toggle-icon" id="icon-sub-d">▼ 展開明細</span>
+      </div>
+      <div class="sub-body" id="sub-d">
+        <div class="note">錄製時間約成品時間的 6 倍（10 分鐘成品 ≈ 1 小時錄製），預設未勾選。</div>
+        <table>
+          <thead><tr><th>項目</th><th>計算方式</th><th class="r">原價</th><th class="r">保守預估</th><th class="r">合作價</th></tr></thead>
+          <tbody id="tbl-d"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="sec-total" id="sec-tot-D">
+      <span class="sec-total-label">D 純錄音費用 小計</span>
+      <div class="stot"><span class="stot-lbl">原價（含稅）</span><span class="stot-val" id="stot-D-orig">—</span></div>
+      <div class="stot"><span class="stot-lbl">保守預估（含稅）</span><span class="stot-val mid" id="stot-D-mid">—</span></div>
+      <div class="stot"><span class="stot-lbl">合作價（含稅）</span><span class="stot-val gold" id="stot-D-collab">—</span></div>
+    </div>
+  </div>
+
+  <div class="ornament">· · · · ·</div>
+
+  <!-- Grand total panel -->
+  <div class="grand-panel">
+    <div class="gp-header">
+      <div>
+        <div class="gp-title">▌ 費用總覽（含稅 5%）</div>
+      </div>
+      <div class="gp-label-main">成本試算</div>
+    </div>
+    <div class="gp-breakdown" id="gp-breakdown"></div>
+    <div class="gp-total-row" id="gp-total-row">
+      <div class="gp-empty">請至少勾選一個項目</div>
+    </div>
+  </div>
+
+  <div class="pdf-btn-wrap">
+    <button class="pdf-btn" onclick="openPdfModal()">⬇ 下載 PDF</button>
+  </div>
+
+</section>
+
+<!-- PDF Modal -->
+<div class="modal-overlay" id="pdf-modal">
+  <div class="modal-box">
+    <div class="modal-title">下載估算報告</div>
+    <label class="modal-label" for="project-name">專案名稱</label>
+    <input class="modal-input" id="project-name" type="text" placeholder="請輸入專案名稱" maxlength="60">
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closePdfModal()">取消</button>
+      <button class="modal-confirm" onclick="downloadPdf()">確認下載</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CPM=225, ZH2F=1.25, TAX=1.05, REC_VO=5, REC_A=6;
+
+// Format decimal minutes → OO分OO秒
+function fmtTime(mins){
+  const totalSec=Math.round(mins*60);
+  const m=Math.floor(totalSec/60);
+  const s=totalSec%60;
+  if(m===0) return `${s} 秒`;
+  if(s===0) return `${m} 分`;
+  return `${m} 分 ${String(s).padStart(2,'0')} 秒`;
+}
+
+const LANGS=[
+  {key:'en',name:'英文',   label:'中文 → 英文',               rate:2.2},
+  {key:'ja',name:'日文',   label:'中文 → 日文',               rate:1.8},
+  {key:'ko',name:'韓文',   label:'中文 → 韓文',               rate:2.8},
+  {key:'ot',name:'其他（直翻）',label:'中文 → 其他語系（可直翻）',rate:3.5},
+  {key:'ob',name:'其他（英橋）',label:'中文 → 其他語系（英文橋接）',rate:4.8},
+];
+const B1=[
+  {n:'中文配音',   h:5000,oM:1,cM:1,t:'hr'},
+  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr'},
+  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr'},
+  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx'},
+  {n:'聲導費',     h:2000,oF:0,cF:0,t:'fx'},
+];
+const B2=[
+  {n:'外語配音',   h:6000,oM:1,cM:1,t:'hr'},
+  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr'},
+  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr'},
+  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx'},
+  {n:'聲導費',     h:2000,oF:1,cF:0,t:'fx'},
+];
+const D=[
+  {n:'剪輯費',     h:800, oM:2,cM:0,t:'hr'},
+  {n:'錄音室租金', h:1500,oM:1,cM:1,t:'hr'},
+  {n:'領班費',     h:1200,oF:1,cF:0,t:'fx'},
+];
+
+let mode='chars', zhMins=40, fMins=50, zhChars=9000, nItems=30;
+
+const $=id=>document.getElementById(id);
+const fmt=n=>'NT$'+Math.round(n).toLocaleString('zh-TW');
+const fmtN=n=>Math.round(n).toLocaleString('zh-TW');
+
+function calcRows(items, recHrs){
+  let orig=0,collab=0;
+  const rows=items.map(it=>{
+    let o=0,c=0,desc='';
+    if(it.t==='hr'){o=it.h*recHrs*(it.oM||0);c=it.h*recHrs*(it.cM||0);desc=(it.oM||0)>0?`錄製 ${recHrs.toFixed(2)}h × ${it.oM}`:'不計';}
+    else{o=it.h*(it.oF||0);c=it.h*(it.cF||0);desc=(it.oF||0)>0?`${it.oF} 場`:'不計';}
+    orig+=o;collab+=c;
+    return {n:it.n,desc,o,c,mid:(o+c)/2};
+  });
+  return {rows,orig,collab,mid:(orig+collab)/2};
+}
+
+function renderTableRows(tbodyId, data){
+  $(tbodyId).innerHTML=data.rows.map(r=>`<tr>
+    <td>${r.n}</td><td class="dim">${r.desc}</td>
+    <td class="num r">${r.o>0?fmt(r.o):'—'}</td>
+    <td class="num r">${r.mid>0?fmt(r.mid):'—'}</td>
+    <td class="num r">${r.c>0?fmt(r.c):'—'}</td>
+  </tr>`).join('');
+}
+
+function toggleSubBody(id){
+  const el=$(id), icon=$('icon-'+id);
+  const open=el.classList.toggle('open');
+  if(icon) icon.textContent=open?'▲ 收起明細':'▼ 展開明細';
+}
+
+function selectMode(m){
+  mode=m;
+  $('card-chars').classList.toggle('active',m==='chars');
+  $('card-mins').classList.toggle('active',m==='mins');
+  calculate();
+}
+function onInput(){calculate();}
+
+// ── A: toggle all langs ──
+function toggleAllA(checked){
+  LANGS.forEach(l=>{const e=$('lang-'+l.key);if(e)e.checked=checked;});
+  recalcGrand();
+}
+function syncAHeader(){
+  const anyChecked=LANGS.some(l=>{const e=$('lang-'+l.key);return e&&e.checked;});
+  const allChecked=LANGS.every(l=>{const e=$('lang-'+l.key);return e&&e.checked;});
+  const chk=$('chk-A');
+  if(chk){ chk.checked=anyChecked; chk.indeterminate=anyChecked&&!allChecked; }
+}
+
+// ── B: toggle all B subs ──
+function toggleAllB(checked){
+  $('chk-B1').checked=checked;
+  LANGS.forEach(l=>{const e=$('chk-B2_'+l.key);if(e)e.checked=checked;});
+  recalcC();recalcGrand();
+}
+function syncBHeader(){
+  const b1=$('chk-B1')&&$('chk-B1').checked;
+  const anyB2=LANGS.some(l=>{const e=$('chk-B2_'+l.key);return e&&e.checked;});
+  const allB2=LANGS.every(l=>{const e=$('chk-B2_'+l.key);return e&&e.checked;});
+  const chk=$('chk-B-all');
+  if(chk){ chk.checked=b1||anyB2; chk.indeterminate=(b1||anyB2)&&!(b1&&allB2); }
+}
+
+function checkedLangs(){return LANGS.filter(l=>{const e=$('lang-'+l.key);return e&&e.checked;});}
+function checkedB2Langs(){return LANGS.filter(l=>{const e=$('chk-B2_'+l.key);return e&&e.checked;});}
+
+function activeVoiceList(){
+  const list=[];
+  if($('chk-B1')&&$('chk-B1').checked)list.push({key:'zh',name:'中文'});
+  LANGS.forEach(l=>{const e=$('chk-B2_'+l.key);if(e&&e.checked)list.push({key:l.key,name:l.name});});
+  return list;
+}
+
+// ── Recalc B2 values in-place (without rebuilding DOM) ──
+function recalcB2Values(){
+  LANGS.forEach(lang=>{
+    const bid='B2_'+lang.key;
+    const recHrs=fMins*REC_VO/60;
+    const data=calcRows(B2,recHrs);
+    const {rows,orig,collab,mid}=data;
+    // update tbody
+    const tbody=document.querySelector(`#sub-${bid} tbody`);
+    if(tbody) tbody.innerHTML=rows.map(r=>`<tr>
+      <td>${r.n}</td><td class="dim">${r.desc}</td>
+      <td class="num r">${r.o>0?fmt(r.o):'—'}</td>
+      <td class="num r">${r.mid>0?fmt(r.mid):'—'}</td>
+      <td class="num r">${r.c>0?fmt(r.c):'—'}</td>
+    </tr>`).join('');
+    // update sub-totals: find the sec-total after sub-body
+    const subWrap=document.querySelector(`#chk-${bid}`)?.closest('.sub-wrap');
+    if(subWrap){
+      const vals=subWrap.querySelectorAll('.stot-val');
+      if(vals[0]) vals[0].textContent=fmt(orig*TAX);
+      if(vals[1]) vals[1].textContent=fmt(mid*TAX);
+      if(vals[2]) vals[2].textContent=fmt(collab*TAX);
+    }
+  });
+  recalcC();
+}
+
+// ── Rebuild B2 blocks ──
+function rebuildB2(){
+  const container=$('b2-container');
+  container.innerHTML='';
+  LANGS.forEach((lang,idx)=>{
+    const bid='B2_'+lang.key;
+    const recHrs=fMins*REC_VO/60;
+    const data=calcRows(B2,recHrs);
+    const {rows,orig,collab,mid}=data;
+    const rowsHtml=rows.map(r=>`<tr>
+      <td>${r.n}</td><td class="dim">${r.desc}</td>
+      <td class="num r">${r.o>0?fmt(r.o):'—'}</td>
+      <td class="num r">${r.mid>0?fmt(r.mid):'—'}</td>
+      <td class="num r">${r.c>0?fmt(r.c):'—'}</td>
+    </tr>`).join('');
+    container.insertAdjacentHTML('beforeend',`
+      <div class="sub-wrap">
+        <div class="sub-hd" onclick="toggleSubBody('sub-${bid}')">
+          <input type="checkbox" class="sub-cb" id="chk-${bid}" checked
+            onclick="event.stopPropagation()" onchange="syncBHeader();recalcC();recalcGrand()">
+          &nbsp;B.2 外語配音 — ${lang.name}
+          <span class="sub-toggle-icon" id="icon-sub-${bid}">▼ 展開明細</span>
+        </div>
+        <div class="sub-body" id="sub-${bid}">
+          <div class="note">外語時長約中文的 1.25 倍；錄製時間約成品的 5 倍</div>
+          <table>
+            <thead><tr><th>項目</th><th>計算方式</th><th class="r">原價</th><th class="r">保守預估</th><th class="r">合作價</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+        <div class="sub-sec-total">
+          <span class="sec-total-label">B.2 ${lang.name}</span>
+          <div class="stot"><span class="stot-lbl">原價（含稅）</span><span class="stot-val">${fmt(orig*TAX)}</span></div>
+          <div class="stot"><span class="stot-lbl">保守預估（含稅）</span><span class="stot-val mid">${fmt(mid*TAX)}</span></div>
+          <div class="stot"><span class="stot-lbl">合作價（含稅）</span><span class="stot-val gold">${fmt(collab*TAX)}</span></div>
+        </div>
+      </div>`);
+  });
+  recalcC();
+}
+
+// ── Recalc C ──
+function recalcC(){
+  const radio=document.querySelector('input[name=sound]:checked');
+  if(!radio)return;
+  const unit=parseFloat(radio.value);
+  const voices=activeVoiceList();
+  const vc=Math.max(voices.length,1);
+  const totalQty=vc*nItems;
+
+  // note
+  if(voices.length>0){
+    $('sound-note').textContent=`已勾選 ${vc} 種配音語系，每種各需 ${nItems} 件聲音設計，共 ${totalQty} 件。`;
+  } else {
+    $('sound-note').textContent=`尚未勾選配音項目，以 1 種語系 × ${nItems} 則計算。`;
+  }
+
+  // per-lang grid
+  const gridItems = voices.length>0 ? voices : [{key:'_',name:'（未勾選）'}];
+  $('sound-grid').innerHTML=gridItems.map(v=>{
+    const sub=unit*nItems, tax=sub*TAX;
+    return `<div class="sound-lang-row">
+      <div class="slang">${v.name}語音</div>
+      <div class="snums">
+        <span>${nItems} 件 × ${fmt(unit)}</span>
+        <span>→ <strong>${fmt(tax)}</strong>（含稅）</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const total=unit*totalQty*TAX;
+  $('stot-C-tax').textContent=fmt(total);
+}
+
+// ── Recalc Grand ──
+function recalcGrand(){
+  recalcC();
+  const lines=[];
+  let origSum=0,collabSum=0,any=false;
+
+  // A — show total only if A is checked AND at least one lang is selected
+  const anyLangChecked=checkedLangs().length>0;
+  if($('chk-A')&&$('chk-A').checked&&anyLangChecked){
+    let at=0;
+    checkedLangs().forEach(l=>{at+=zhChars*l.rate*TAX;});
+    $('stot-A-tax').textContent=fmt(at);
+    lines.push({lbl:'A｜翻譯費用',orig:at,mid:at,collab:at});
+    origSum+=at;collabSum+=at;any=true;
+  } else {
+    $('stot-A-tax').textContent='—';
+  }
+
+  // B
+  let bOrig=0,bCollab=0,bMid=0,bAny=false;
+  if($('chk-B1')&&$('chk-B1').checked){
+    const d=calcRows(B1,zhMins*REC_VO/60);
+    $('sb1-orig').textContent=fmt(d.orig*TAX);
+    $('sb1-mid').textContent=fmt(d.mid*TAX);
+    $('sb1-collab').textContent=fmt(d.collab*TAX);
+    bOrig+=d.orig*TAX;bCollab+=d.collab*TAX;bMid+=d.mid*TAX;bAny=true;
+  } else {
+    $('sb1-orig').textContent='—';$('sb1-mid').textContent='—';$('sb1-collab').textContent='—';
+  }
+  LANGS.forEach(l=>{
+    const e=$('chk-B2_'+l.key);
+    const subWrap=e?.closest('.sub-wrap');
+    const vals=subWrap?.querySelectorAll('.stot-val');
+    if(e&&e.checked){
+      const d=calcRows(B2,fMins*REC_VO/60);
+      if(vals&&vals[0]){vals[0].textContent=fmt(d.orig*TAX);vals[1].textContent=fmt(d.mid*TAX);vals[2].textContent=fmt(d.collab*TAX);}
+      bOrig+=d.orig*TAX;bCollab+=d.collab*TAX;bMid+=d.mid*TAX;bAny=true;
+    } else {
+      if(vals&&vals[0]){vals[0].textContent='—';vals[1].textContent='—';vals[2].textContent='—';}
+    }
+  });
+  if(bAny){
+    $('stot-B-orig').textContent=fmt(bOrig);
+    $('stot-B-mid').textContent=fmt(bMid);
+    $('stot-B-collab').textContent=fmt(bCollab);
+    lines.push({lbl:'B｜真人配音費用',orig:bOrig,mid:bMid,collab:bCollab});
+    origSum+=bOrig;collabSum+=bCollab;any=true;
+  } else {
+    $('stot-B-orig').textContent='—';$('stot-B-mid').textContent='—';$('stot-B-collab').textContent='—';
+  }
+
+  // C
+  if($('chk-C')&&$('chk-C').checked){
+    const radio=document.querySelector('input[name=sound]:checked');
+    if(radio){
+      const voices=activeVoiceList();
+      const vc=Math.max(voices.length,1);
+      const t=parseFloat(radio.value)*vc*nItems*TAX;
+      $('stot-C-tax').textContent=fmt(t);
+      lines.push({lbl:'C｜聲音設計',orig:t,mid:t,collab:t});
+      origSum+=t;collabSum+=t;any=true;
+    }
+  } else {
+    $('stot-C-tax').textContent='—';
+  }
+
+  // D
+  if($('chk-D')&&$('chk-D').checked){
+    const d=calcRows(D,zhMins*REC_A/60);
+    $('stot-D-orig').textContent=fmt(d.orig*TAX);
+    $('stot-D-mid').textContent=fmt(d.mid*TAX);
+    $('stot-D-collab').textContent=fmt(d.collab*TAX);
+    lines.push({lbl:'D｜純錄音費用',orig:d.orig*TAX,mid:d.mid*TAX,collab:d.collab*TAX});
+    origSum+=d.orig*TAX;collabSum+=d.collab*TAX;any=true;
+  } else {
+    $('stot-D-orig').textContent='—';$('stot-D-mid').textContent='—';$('stot-D-collab').textContent='—';
+  }
+
+  const midSum=(origSum+collabSum)/2;
+
+  // breakdown list
+  if(!any){
+    $('gp-breakdown').innerHTML='<div class="gp-empty" style="padding:4px 0;">請勾選項目後即可加總</div>';
+    $('gp-total-row').innerHTML='<div class="gp-empty">請至少勾選一個項目</div>';
+    return;
+  }
+
+  $('gp-breakdown').innerHTML=lines.map(l=>`
+    <div class="gp-line">
+      <span class="lbl">${l.lbl}</span>
+      <span class="vals">
+        <span class="v-orig">${fmt(l.orig)}</span>
+        <span>～</span>
+        <span class="v-mid">${fmt(l.mid)}</span>
+        <span>～</span>
+        <span class="v-collab">${fmt(l.collab)}</span>
+      </span>
+    </div>`).join('');
+
+  $('gp-total-row').innerHTML=`
+    <div class="gp-tot"><span class="gp-tot-lbl">原價上限</span><span class="gp-tot-val">${fmt(origSum)}</span></div>
+    <span class="gp-sep">～</span>
+    <div class="gp-tot"><span class="gp-tot-lbl">保守預估</span><span class="gp-tot-val big">${fmt(midSum)}</span></div>
+    <span class="gp-sep">～</span>
+    <div class="gp-tot"><span class="gp-tot-lbl">合作價下限</span><span class="gp-tot-val">${fmt(collabSum)}</span></div>
+  `;
+}
+
+// ── Main calculate ──
+function calculate(){
+  if(mode==='chars'){
+    zhChars=parseFloat($('chars-input').value)||9000;
+    nItems=parseFloat($('chars-count').value)||30;
+    zhMins=zhChars/CPM;
+  } else {
+    zhMins=parseFloat($('mins-input').value)||40;
+    nItems=parseFloat($('mins-count').value)||30;
+    zhChars=zhMins*CPM;
+  }
+  fMins=zhMins*ZH2F;
+
+  $('params-bar').innerHTML=`
+    <div class="param-item">中文總字數<strong>${fmtN(zhChars)} 字</strong></div>
+    <div class="param-item">中文總時長<strong>${fmtTime(zhMins)}</strong></div>
+    <div class="param-item">外語總時長<strong>${fmtTime(fMins)}</strong></div>
+    <div class="param-item">總共則數<strong>${nItems} 則</strong></div>
+    <div class="param-item">每則字數<strong>${(zhChars/nItems).toFixed(0)} 字</strong></div>
+    <div class="param-item">每則中文時長<strong>${fmtTime(zhMins/nItems)}</strong></div>
+    <div class="param-item">每則外語時長<strong>${fmtTime(fMins/nItems)}</strong></div>
+  `;
+
+  // A rows
+  $('trans-rows').innerHTML=LANGS.map(l=>{
+    const pre=zhChars*l.rate,tax=pre*TAX;
+    return `<div class="lang-row">
+      <input type="checkbox" class="sub-cb" id="lang-${l.key}" checked onchange="syncAHeader();recalcGrand()">
+      <label for="lang-${l.key}">${l.label}（每字 NT$${l.rate}）</label>
+      <div class="lang-nums"><span>${fmtN(zhChars)} 字</span><span>未稅 ${fmt(pre)}</span><span><strong>含稅 ${fmt(tax)}</strong></span></div>
+    </div>`;
+  }).join('');
+
+  // B1 table
+  renderTableRows('tbl-b1', calcRows(B1, zhMins*REC_VO/60));
+
+  // B2 — always show all langs, only rebuild on first load (container empty) or recalc values
+  if(!$('b2-container').children.length) rebuildB2();
+  else recalcB2Values();
+
+  // D table
+  renderTableRows('tbl-d', calcRows(D, zhMins*REC_A/60));
+
+  recalcGrand();
+  $('results').classList.add('visible');
+}
+
+calculate();
+
+// ── PDF Modal ──
+function openPdfModal(){
+  $('pdf-modal').classList.add('open');
+  $('project-name').focus();
+}
+function closePdfModal(){
+  $('pdf-modal').classList.remove('open');
+}
+// Close on overlay click
+$('pdf-modal').addEventListener('click',function(e){if(e.target===this)closePdfModal();});
+// Enter key confirms
+$('project-name').addEventListener('keydown',function(e){if(e.key==='Enter')downloadPdf();});
+
+function downloadPdf(){
+  const projName = $('project-name').value.trim() || '未命名專案';
+  closePdfModal();
+
+  // Format datetime
+  const now = new Date();
+  const pad = n=>String(n).padStart(2,'0');
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  // Expand all collapsed sub-bodies temporarily
+  const collapsed = document.querySelectorAll('.sub-body:not(.open)');
+  collapsed.forEach(el=>el.style.display='block');
+
+  // Inject print header
+  const printHeader = document.createElement('div');
+  printHeader.id = 'print-header';
+  printHeader.innerHTML = `
+    <div style="font-family:'Noto Serif TC',serif;padding:18px 0 14px;border-bottom:2px solid #b8860b;margin-bottom:18px;">
+      <div style="font-size:.72rem;letter-spacing:.15em;color:#b8860b;font-family:'Space Mono',monospace;text-transform:uppercase;margin-bottom:4px;">ARTOGO 語音導覽成本估算報告</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#1a1208;">${projName}</div>
+      <div style="font-size:.76rem;color:#6b5c3e;font-family:'Space Mono',monospace;margin-top:4px;">${dateStr} ${timeStr} 下載</div>
+    </div>`;
+  document.body.insertBefore(printHeader, document.body.firstChild);
+
+  // Hide non-content elements for print
+  const hideEls = document.querySelectorAll('header, .mode-section, .pdf-btn-wrap, .modal-overlay');
+  hideEls.forEach(el=>el.dataset.hide='1');
+
+  // Print style
+  const style = document.createElement('style');
+  style.id = 'print-style';
+  style.textContent = `
+    @media print {
+      @page { size: A4; margin: 14mm 12mm; }
+      body { background: white !important; }
+      [data-hide="1"] { display: none !important; }
+      .results-section { padding: 0 !important; max-width: 100% !important; }
+      .cat-wrap { box-shadow: none !important; page-break-inside: avoid; }
+      .grand-panel { page-break-inside: avoid; }
+      .animate { animation: none !important; }
+      .sub-body { display: block !important; }
+      .pdf-btn-wrap { display: none !important; }
+    }`;
+  document.head.appendChild(style);
+
+  setTimeout(()=>{
+    window.print();
+    // Restore after print
+    setTimeout(()=>{
+      collapsed.forEach(el=>el.style.display='');
+      printHeader.remove();
+      style.remove();
+      hideEls.forEach(el=>delete el.dataset.hide);
+    }, 1000);
+  }, 200);
+}
+</script>
+</body>
+</html>
