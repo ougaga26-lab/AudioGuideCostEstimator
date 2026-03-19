@@ -1011,23 +1011,23 @@ function downloadPdf(){
       .radio-row { padding-left: 4px; }
       .radio-row label { display: block !important; font-size: .8rem !important; }
 
-      /* section headers */
-      .cat-hd { background: #222 !important; }
-      .cat-hd * { color: #fff !important; }
-      .cat-hd-label { color: #fff !important; }
+      /* section headers — black bg, white bold text */
+      .cat-hd { background: #000 !important; }
+      .cat-hd, .cat-hd * { color: #fff !important; font-weight: bold !important; }
+      .cat-hd-label { color: #fff !important; font-weight: bold !important; }
 
-      .sub-hd { background: #555 !important; }
-      .sub-hd * { color: #fff !important; }
+      .sub-hd { background: #333 !important; }
+      .sub-hd, .sub-hd * { color: #fff !important; }
 
       /* sub-bodies always open */
       .sub-body { display: block !important; background: white !important; }
 
-      /* totals bars */
-      .sec-total { background: #222 !important; border-top: 2px solid #333 !important; }
-      .sec-total * { color: #fff !important; }
-      .sec-total-label { color: #ddd !important; }
+      /* totals bars — black bg */
+      .sec-total { background: #000 !important; border-top: 2px solid #333 !important; }
+      .sec-total, .sec-total * { color: #fff !important; }
+      .sec-total-label { color: #ddd !important; font-weight: bold !important; }
       .stot-lbl { color: #bbb !important; }
-      .stot-val, .stot-val.gold, .stot-val.mid { color: #fff !important; }
+      .stot-val, .stot-val.gold, .stot-val.mid { color: #fff !important; font-weight: bold !important; }
 
       .sub-sec-total { background: #f0f0f0 !important; border-top: 1px solid #bbb !important; }
       .sub-sec-total * { color: #111 !important; }
@@ -1043,15 +1043,15 @@ function downloadPdf(){
       td { border-bottom: 1px solid #ddd !important; color: #111 !important; }
       td.dim { color: #555 !important; }
 
-      /* grand panel */
-      .grand-panel { background: #1a1a1a !important; page-break-inside: avoid; }
-      .grand-panel * { color: #fff !important; }
-      .gp-title { color: #bbb !important; }
-      .gp-label-main { color: #fff !important; }
+      /* grand panel — black bg, white bold text */
+      .grand-panel { background: #000 !important; page-break-inside: avoid; }
+      .grand-panel, .grand-panel * { color: #fff !important; }
+      .gp-title { color: #ccc !important; }
+      .gp-label-main { color: #fff !important; font-weight: bold !important; font-size: 1.1rem !important; }
       .gp-line .lbl { color: #ddd !important; }
       .gp-line .vals, .gp-line .v-orig, .gp-line .v-mid, .gp-line .v-collab { color: #fff !important; }
-      .gp-tot-lbl { color: #bbb !important; }
-      .gp-tot-val, .gp-tot-val.big { color: #fff !important; }
+      .gp-tot-lbl { color: #ccc !important; }
+      .gp-tot-val, .gp-tot-val.big { color: #fff !important; font-weight: bold !important; }
       .gp-sep { color: #888 !important; }
 
       /* cat-wrap */
