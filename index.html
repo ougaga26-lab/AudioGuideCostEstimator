@@ -25,6 +25,8 @@ header{text-align:center;padding:50px 20px 32px;}
 h1{font-family:'Playfair Display',serif;font-size:clamp(1.45rem,4vw,2.5rem);font-weight:700;color:var(--ink);}
 h1 span{color:var(--gold);}
 .subtitle{font-size:.76rem;letter-spacing:.2em;color:var(--gold);font-family:'Space Mono',monospace;text-transform:uppercase;margin-top:4px;}
+.disclaimer{margin-top:12px;display:inline-block;text-align:left;}
+.disclaimer p{font-size:.78rem;color:#c0392b;font-family:'Noto Serif TC',serif;line-height:1.7;letter-spacing:.01em;}
 
 /* Mode cards */
 .mode-section{text-align:center;padding:0 20px 24px;}
@@ -86,7 +88,12 @@ h1 span{color:var(--gold);}
 .stot-val.gold{color:#ffd055;font-size:1.1rem;font-weight:bold;}
 .stot-val.mid{color:#ffe0a0;font-size:1rem;font-weight:bold;}
 
-/* Mode toggle switch (VO / REC) */
+/* Revision fee bar */
+.revision-bar{background:#fff8f0;border-bottom:1px solid var(--gold-p);padding:9px 16px;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;}
+.revision-label{display:flex;align-items:center;gap:6px;font-size:.84rem;color:var(--ink);cursor:pointer;font-weight:500;}
+.revision-note{font-size:.76rem;color:#c0392b;font-style:italic;}
+.revision-row td{color:#c0392b !important;}
+.revision-row td.num{color:#c0392b !important;}
 .mode-toggle{display:flex;align-items:center;gap:0;border-radius:20px;overflow:hidden;border:1px solid #c8a855;flex-shrink:0;}
 .mode-toggle-btn{background:transparent;border:none;padding:4px 12px;font-size:.72rem;font-family:'Space Mono',monospace;cursor:pointer;color:#c8a855;transition:all .2s;white-space:nowrap;flex:1;text-align:center;}
 .mode-toggle-btn.active{background:var(--gold);color:var(--ink);font-weight:bold;}
@@ -275,6 +282,10 @@ td.num{font-family:'Space Mono',monospace;}
     <h1><span>ARTOGO</span> 語音導覽成本估算器</h1>
   </div>
   <p class="subtitle">Audio Guide Cost Estimator</p>
+  <div class="disclaimer">
+    <p>＊報價僅供參考，實際金額以實際錄製為準，建議先提供文稿後再進行評估</p>
+    <p>＊以下試算僅適用一般展覽語音導覽，特殊語音情境或特殊效果不適用</p>
+  </div>
 </header>
 
 <section class="mode-section">
@@ -333,6 +344,14 @@ td.num{font-family:'Space Mono',monospace;}
         🎤 B｜真人配音費用
       </label>
     </div>
+    <!-- 修改費選項 -->
+    <div class="revision-bar">
+      <label class="revision-label">
+        <input type="checkbox" class="sub-cb" id="chk-revision" onchange="recalcGrand()">
+        &nbsp;包含修改費：是否為高標準需多重審核客戶
+      </label>
+      <span class="revision-note">（勾選後，所有已選語系配音費用 +20%）</span>
+    </div>
     <!-- B.1 -->
     <div class="sub-wrap">
       <div class="sub-hd" onclick="toggleSubBody('sub-b1')">
@@ -385,12 +404,12 @@ td.num{font-family:'Space Mono',monospace;}
         <label for="s-none">無聲音設計 — NT$0 / 件</label>
       </div>
       <div class="radio-row">
-        <input type="radio" name="sound" id="s-simple" value="325" onchange="$('chk-C').checked=true;recalcC();recalcGrand()">
-        <label for="s-simple">簡易背景音樂版 — NT$325 / 件</label>
+        <input type="radio" name="sound" id="s-simple" value="800" onchange="$('chk-C').checked=true;recalcC();recalcGrand()">
+        <label for="s-simple">簡易背景音樂版 — NT$800 / 件</label>
       </div>
       <div class="radio-row">
-        <input type="radio" name="sound" id="s-complex" value="480" checked onchange="$('chk-C').checked=true;recalcC();recalcGrand()">
-        <label for="s-complex">複雜音效＋背景 — NT$480 / 件</label>
+        <input type="radio" name="sound" id="s-complex" value="1500" checked onchange="$('chk-C').checked=true;recalcC();recalcGrand()">
+        <label for="s-complex">複雜音效＋背景 — NT$1,500 / 件</label>
       </div>
       <!-- per-lang breakdown -->
       <div id="sound-grid" class="sound-grid" style="margin-top:8px;"></div>
@@ -544,8 +563,9 @@ function calcRows(items, recHrs){
   return {rows,orig,collab,mid:(orig+collab)/2};
 }
 
-function renderTableRows(tbodyId, data){
-  $(tbodyId).innerHTML=data.rows.map(r=>`<tr>
+function renderTableRows(tbodyId, data, showRevision){
+  const revChecked = showRevision && $('chk-revision') && $('chk-revision').checked;
+  let rows = data.rows.map(r=>`<tr>
     <td>${r.n}</td>
     <td class="dim">${r.unit}</td>
     <td class="dim">${r.desc}</td>
@@ -553,6 +573,18 @@ function renderTableRows(tbodyId, data){
     <td class="num r">${r.mid>0?fmt(r.mid):'—'}</td>
     <td class="num r">${r.c>0?fmt(r.c):'—'}</td>
   </tr>`).join('');
+  if(revChecked){
+    const rO=data.orig*0.2, rC=data.collab*0.2, rM=data.mid*0.2;
+    rows+=`<tr class="revision-row">
+      <td>修改費</td>
+      <td class="dim">—</td>
+      <td class="dim">總金額的 20%</td>
+      <td class="num r">${fmt(rO)}</td>
+      <td class="num r">${fmt(rM)}</td>
+      <td class="num r">${fmt(rC)}</td>
+    </tr>`;
+  }
+  $(tbodyId).innerHTML = rows;
 }
 
 function toggleSubBody(id){
@@ -657,6 +689,9 @@ function rebuildB2(){
     const noteText=curMode==='vo'
       ? '外語時長約中文的 1.25 倍；錄製時間約成品的 5 倍'
       : '純錄音（客戶自備配音員）：錄製時間約成品時間的 6 倍';
+    const jaWarning = lang.key==='ja'
+      ? `<div class="note" style="margin-top:6px;border-left-color:#c0392b;color:#c0392b;">＊若日文導覽文稿中有許多漢字專有名詞，實際成本費用可能為整體報價的 +30%</div>`
+      : '';
     const isChecked = b2Checked[lang.key] !== false;
     container.insertAdjacentHTML('beforeend',`
       <div class="sub-wrap">
@@ -672,6 +707,7 @@ function rebuildB2(){
         </div>
         <div class="sub-body" id="sub-${bid}">
           <div class="note">${noteText}</div>
+          ${jaWarning}
           <table>
             <thead><tr><th>項目</th><th>單價</th><th>計算方式</th><th class="r">原價</th><th class="r">保守預估</th><th class="r">合作價</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
@@ -740,14 +776,17 @@ function recalcGrand(){
   }
 
   // B
+  const revMul = ($('chk-revision')&&$('chk-revision').checked) ? 1.2 : 1.0;
   let bOrig=0,bCollab=0,bMid=0,bAny=false;
   if($('chk-B1')&&$('chk-B1').checked){
     const {items,hrs}=getItemsAndHrs('b1');
     const d=calcRows(items,hrs);
-    $('sb1-orig').textContent=fmt(d.orig*TAX);
-    $('sb1-mid').textContent=fmt(d.mid*TAX);
-    $('sb1-collab').textContent=fmt(d.collab*TAX);
-    bOrig+=d.orig*TAX;bCollab+=d.collab*TAX;bMid+=d.mid*TAX;bAny=true;
+    renderTableRows('tbl-b1', d, true);
+    const o=d.orig*TAX*revMul, c=d.collab*TAX*revMul, m=d.mid*TAX*revMul;
+    $('sb1-orig').textContent=fmt(o);
+    $('sb1-mid').textContent=fmt(m);
+    $('sb1-collab').textContent=fmt(c);
+    bOrig+=o;bCollab+=c;bMid+=m;bAny=true;
   } else {
     $('sb1-orig').textContent='—';$('sb1-mid').textContent='—';$('sb1-collab').textContent='—';
   }
@@ -758,8 +797,28 @@ function recalcGrand(){
     if(e&&e.checked){
       const {items,hrs}=getItemsAndHrs(l.key);
       const d=calcRows(items,hrs);
-      if(vals&&vals[0]){vals[0].textContent=fmt(d.orig*TAX);vals[1].textContent=fmt(d.mid*TAX);vals[2].textContent=fmt(d.collab*TAX);}
-      bOrig+=d.orig*TAX;bCollab+=d.collab*TAX;bMid+=d.mid*TAX;bAny=true;
+      // update detail rows with revision row
+      const tbody=subWrap?.querySelector('tbody');
+      if(tbody){
+        const revChecked=$('chk-revision')&&$('chk-revision').checked;
+        let rowsHtml=d.rows.map(r=>`<tr>
+          <td>${r.n}</td><td class="dim">${r.unit}</td><td class="dim">${r.desc}</td>
+          <td class="num r">${r.o>0?fmt(r.o):'—'}</td>
+          <td class="num r">${r.mid>0?fmt(r.mid):'—'}</td>
+          <td class="num r">${r.c>0?fmt(r.c):'—'}</td>
+        </tr>`).join('');
+        if(revChecked){
+          const rO=d.orig*0.2,rC=d.collab*0.2,rM=d.mid*0.2;
+          rowsHtml+=`<tr class="revision-row">
+            <td>修改費</td><td class="dim">—</td><td class="dim">總金額的 20%</td>
+            <td class="num r">${fmt(rO)}</td><td class="num r">${fmt(rM)}</td><td class="num r">${fmt(rC)}</td>
+          </tr>`;
+        }
+        tbody.innerHTML=rowsHtml;
+      }
+      const o=d.orig*TAX*revMul, c=d.collab*TAX*revMul, m=d.mid*TAX*revMul;
+      if(vals&&vals[0]){vals[0].textContent=fmt(o);vals[1].textContent=fmt(m);vals[2].textContent=fmt(c);}
+      bOrig+=o;bCollab+=c;bMid+=m;bAny=true;
     } else {
       if(vals&&vals[0]){vals[0].textContent='—';vals[1].textContent='—';vals[2].textContent='—';}
     }
@@ -875,7 +934,7 @@ function calculate(){
 
   // B1 table
   const b1data=calcRows(getItemsAndHrs('b1').items, getItemsAndHrs('b1').hrs);
-  renderTableRows('tbl-b1', b1data);
+  renderTableRows('tbl-b1', b1data, true);
 
   // B2 — always rebuild to keep thead and values fresh
   rebuildB2();
